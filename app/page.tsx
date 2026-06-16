@@ -1,4 +1,9 @@
+"use client";
+
+import { useState } from "react";
+
 export default function Home() {
+  const [message, setMessage] = useState("");
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-2xl rounded-xl bg-white p-8 shadow">
@@ -53,15 +58,21 @@ export default function Home() {
               <option>自信あり</option>
             </select>
           </div>
+<button
+  type="button"
+  onClick={() => setMessage("保存しました！")}
+  className="rounded bg-blue-600 px-4 py-2 font-bold text-white"
+>
+  保存
+</button>
 
-          <button
-            type="button"
-            className="rounded bg-blue-600 px-4 py-2 font-bold text-white"
-          >
-            保存
-          </button>
-        </form>
-      </div>
-    </main>
-  );
+{message && (
+  <p className="mt-4 text-green-600 font-bold">
+    {message}
+  </p>
+)}
+</form>
+</div>
+</main>
+);
 }
