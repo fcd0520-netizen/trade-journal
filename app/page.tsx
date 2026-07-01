@@ -4,6 +4,8 @@ import { useState } from "react";
 
 export default function Home() {
   const [message, setMessage] = useState("");
+  const [target, setTarget] = useState("");
+  const [amount, setAmount] = useState("");
   return (
     <main className="min-h-screen bg-gray-100 p-8">
       <div className="mx-auto max-w-2xl rounded-xl bg-white p-8 shadow">
@@ -28,7 +30,15 @@ export default function Home() {
               placeholder="例：ALAB、TEAM、東京ダービー"
             />
           </div>
-
+          <div>
+          <label className="block font-medium">金額</label>
+          <input
+    className="mt-1 w-full rounded border p-2"
+    placeholder="例：50000"
+    value={amount}
+    onChange={(e) => setAmount(e.target.value)}
+  />
+</div>
           <div>
             <label className="block font-medium">判断</label>
             <select className="mt-1 w-full rounded border p-2">
