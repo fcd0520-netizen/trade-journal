@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📈 Trade Journal
 
-## Getting Started
+> **利益ではなく、良い意思決定を積み重ねる。**
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## プロジェクトについて
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Trade Journalは、売買記録を残すだけのアプリではありません。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+市場環境・市場テーマ・重要イベント・心理状態・ルール遵守・振り返りを記録し、
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**投資家として成長すること**
 
-## Learn More
+を目的としたジャーナルです。
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 開発理念
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- 相場を分析する前に、自分を分析する。
+- 勝ちよりも、良い意思決定を評価する。
+- 勝ちパターンには寿命がある。
+- 市場環境が変われば、自分もアップデートする。
+- 資産配分も投資である。
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Motto
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> 「完成しないと、それが使えない。」
+
+この言葉を忘れず、一歩ずつ積み上げていく。
+
+---
+
+## 開発者
+
+- Product Owner：Takuma
+- Technical Lead：ChatGPT
+
+---
+
+## Roadmap
+
+- ✅ Version 0.3　記録機能完成
+- 🚧 Version 0.4　市場環境・市場テーマ・イベント
+- 🔜 Version 0.5　編集機能・タグ
+- 🔜 Version 0.6　分析ダッシュボード
+- 🔜 Version 1.0　Trade Journal Release
+- 🔜 Version 2.0　AI分析
+- 🔜 Version 3.0　AIコーチ
