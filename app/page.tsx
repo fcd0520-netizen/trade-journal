@@ -7,6 +7,7 @@ type Journal = {
   category: string;
   target: string;
   marketEnvironment: string;
+  marketTheme: string;
   amount: string;
   profit: string;
   decision: string;
@@ -22,6 +23,7 @@ export default function Home() {
   const [category, setCategory] = useState("株式");
   const [marketEnvironment, setMarketEnvironment] =
   useState("未選択");
+  const [marketTheme, setMarketTheme] = useState("未選択");
   const [target, setTarget] = useState("");
   const [amount, setAmount] = useState("");
   const [profit, setProfit] = useState("");
@@ -59,6 +61,7 @@ export default function Home() {
       category,
       target,
       marketEnvironment,
+      marketTheme,
       amount,
       profit,
       decision,
@@ -73,6 +76,7 @@ export default function Home() {
     setJournals([newJournal, ...journals]);
     setTarget("");
     setMarketEnvironment("未選択");
+    setMarketTheme("未選択");
     setAmount("");
     setProfit("");
     setReason("");
