@@ -6,6 +6,7 @@ type Journal = {
   id: number;
   category: string;
   target: string;
+  marketEnvironment: string;
   amount: string;
   profit: string;
   decision: string;
@@ -19,6 +20,8 @@ type Journal = {
 
 export default function Home() {
   const [category, setCategory] = useState("株式");
+  const [marketEnvironment, setMarketEnvironment] =
+  useState("未選択");
   const [target, setTarget] = useState("");
   const [amount, setAmount] = useState("");
   const [profit, setProfit] = useState("");
@@ -55,6 +58,7 @@ export default function Home() {
       id: Date.now(),
       category,
       target,
+      marketEnvironment,
       amount,
       profit,
       decision,
@@ -68,6 +72,7 @@ export default function Home() {
 
     setJournals([newJournal, ...journals]);
     setTarget("");
+    setMarketEnvironment("未選択");
     setAmount("");
     setProfit("");
     setReason("");
@@ -165,7 +170,21 @@ export default function Home() {
                 onChange={(e) => setTarget(e.target.value)}
               />
             </div>
-
+　　　　　　<div>
+  <label className="block font-medium">市場環境</label>
+  <select
+    className="mt-1 w-full rounded border p-2"
+    value={marketEnvironment}
+    onChange={(e) => setMarketEnvironment(e.target.value)}
+  >
+    <option>未選択</option>
+    <option>強気相場</option>
+    <option>弱気相場</option>
+    <option>暴落</option>
+    <option>高ボラティリティ</option>
+    <option>レンジ相場</option>
+  </select>
+</div>
             <div>
               <label className="block font-medium">投資金額</label>
               <input
@@ -315,6 +334,9 @@ export default function Home() {
                       ルール：
                       {journal.ruleFollowed ? "⭕ 守れた" : "❌ 守れなかった"}
                     </p>
+                    <p>
+  市場環境：{journal.marketEnvironment || "未選択"}
+</p>
                     <p>判断：{journal.decision}</p>
                     <p>心理状態：{journal.emotion}</p>
                     <p>理由：{journal.reason || "未入力"}</p>
