@@ -176,6 +176,27 @@ export default function Home() {
             </div>
 　　　　　　<div>
   <label className="block font-medium">市場環境</label>
+  <div>
+  <label className="block font-medium">市場テーマ</label>
+
+  <select
+    className="mt-1 w-full rounded border p-2"
+    value={marketTheme}
+    onChange={(e) => setMarketTheme(e.target.value)}
+  >
+    <option>未選択</option>
+    <option>AI</option>
+    <option>半導体</option>
+    <option>SaaS</option>
+    <option>IPO</option>
+    <option>宇宙</option>
+    <option>防衛</option>
+    <option>バイオ</option>
+    <option>高配当</option>
+    <option>エネルギー</option>
+    <option>その他</option>
+  </select>
+</div>
   <select
     className="mt-1 w-full rounded border p-2"
     value={marketEnvironment}
@@ -339,7 +360,9 @@ export default function Home() {
                       {journal.ruleFollowed ? "⭕ 守れた" : "❌ 守れなかった"}
                     </p>
                     <p>
-  市場環境：{journal.marketEnvironment || "未選択"}
+  市場環境：{journal.marketEnvironment || "未選択"}</p>
+<p>
+  市場テーマ：{journal.marketTheme || "未選択"}
 </p>
                     <p>判断：{journal.decision}</p>
                     <p>心理状態：{journal.emotion}</p>
