@@ -39,11 +39,11 @@ export default function Dashboard({ journals }: DashboardProps) {
   ];
 
   return (
-    <section aria-label="ダッシュボード" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <section aria-label="ダッシュボード" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {cards.map((card) => (
-        <div key={card.label} className="rounded-xl bg-white p-5 shadow">
-          <p className="text-sm text-gray-500">{card.label}</p>
-          <p className="mt-1 text-2xl font-bold">{card.value}</p>
+        <div key={card.label} className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-xl shadow-black/10 sm:p-5">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs">{card.label}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-slate-50 sm:text-3xl">{card.value}</p>
         </div>
       ))}
     </section>

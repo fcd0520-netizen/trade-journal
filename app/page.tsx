@@ -248,30 +248,31 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <section className="rounded-xl bg-white p-6 shadow">
-          <h1 className="text-3xl font-bold">Trade Journal</h1>
+    <main className="min-h-screen bg-slate-950 px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
+        <section className="overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/60 p-6 shadow-2xl shadow-black/20 sm:p-8">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">Decision Performance</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Trade Journal</h1>
 
-          <p className="mt-2 text-gray-600">
+          <p className="mt-3 text-sm text-slate-400 sm:text-base">
             利益ではなく、良い意思決定を積み重ねる
           </p>
         </section>
 
         <Dashboard journals={journals} />
 
-        <section className="rounded-xl bg-white p-6 shadow">
-          <h2 className="text-xl font-bold">
+        <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10 sm:p-7">
+          <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
             {editingId !== null ? "記録を編集" : "新規記録"}
           </h2>
 
           {editingId !== null && (
-            <p className="mt-2 rounded bg-yellow-100 p-3 text-sm font-medium text-yellow-800">
+            <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm font-medium text-amber-300">
               編集モードです。修正後に「更新する」を押してください。
             </p>
           )}
 
-          <div className="mt-5 space-y-4">
+          <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <div>
               <label className="block font-medium">種別</label>
 
@@ -406,15 +407,16 @@ export default function Home() {
               </select>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/60 px-3">
               <input
                 id="rule-followed"
+                className="h-4 w-4 accent-sky-500"
                 type="checkbox"
                 checked={ruleFollowed}
                 onChange={(e) => setRuleFollowed(e.target.checked)}
               />
 
-              <label htmlFor="rule-followed" className="font-medium">
+              <label htmlFor="rule-followed" className="text-sm font-medium text-slate-300">
                 ルールを守れた
               </label>
             </div>
@@ -434,7 +436,7 @@ export default function Home() {
               </select>
             </div>
 
-            <div>
+            <div className="sm:col-span-2">
               <label className="block font-medium">理由</label>
 
               <textarea
@@ -463,7 +465,7 @@ export default function Home() {
               </select>
             </div>
 
-            <div>
+            <div className="sm:col-span-2">
               <label className="block font-medium">振り返り</label>
 
               <textarea
@@ -475,11 +477,11 @@ export default function Home() {
               />
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 sm:col-span-2">
               <button
                 type="button"
                 onClick={handleSave}
-                className="rounded bg-blue-600 px-4 py-2 font-bold text-white"
+                className="min-h-11 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900"
               >
                 {editingId !== null ? "更新する" : "保存"}
               </button>
@@ -488,7 +490,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleCancelEdit}
-                  className="rounded bg-gray-500 px-4 py-2 font-bold text-white"
+                  className="min-h-11 rounded-lg border border-slate-600 bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
                 >
                   編集をキャンセル
                 </button>
@@ -496,16 +498,16 @@ export default function Home() {
             </div>
 
             {message && (
-              <p className="font-bold text-green-600">{message}</p>
+              <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300 sm:col-span-2">{message}</p>
             )}
           </div>
         </section>
 
-        <section className="rounded-xl bg-white p-6 shadow">
+        <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-bold">月間カレンダー</h2>
-              <p className="mt-1 text-sm text-gray-500">
+              <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">月間カレンダー</h2>
+              <p className="mt-1 text-sm text-slate-500">
                 印のある日には取引記録があります。
               </p>
             </div>
@@ -514,14 +516,14 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => setSelectedDate(null)}
-                className="rounded bg-gray-600 px-4 py-2 text-sm font-bold text-white"
+                className="min-h-10 rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
               >
                 すべて表示
               </button>
             )}
           </div>
 
-          <div className="mt-5 flex justify-center">
+          <div className="mt-5 flex justify-center rounded-xl border border-slate-800 bg-slate-950/50 p-2 sm:p-5">
             <Calendar
               locale="ja-JP"
               value={selectedDate ? fromDateKey(selectedDate) : null}
@@ -530,7 +532,7 @@ export default function Home() {
               tileContent={({ date, view }) =>
                 view === "month" && journalDates.has(toDateKey(date)) ? (
                   <span
-                    className="mx-auto mt-1 block h-2 w-2 rounded-full bg-blue-600"
+                    className="mx-auto mt-1 block h-1.5 w-1.5 rounded-full bg-sky-400"
                     aria-label="記録あり"
                   />
                 ) : null
@@ -539,47 +541,47 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="rounded-xl bg-white p-6 shadow">
-          <h2 className="text-xl font-bold">記録一覧</h2>
+        <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10 sm:p-7">
+          <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">記録一覧</h2>
 
           {selectedDate !== null && (
-            <p className="mt-2 text-sm font-medium text-blue-700">
+            <p className="mt-2 text-sm font-medium text-sky-400">
               {selectedDate} の記録を表示中
             </p>
           )}
 
           <input
-            className="mt-4 w-full rounded border p-2"
+            className="mt-5 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
             placeholder="検索：TEAM、AI、FOMC、買い など"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
 
           {filteredJournals.length === 0 ? (
-            <p className="mt-4 text-gray-500">記録がありません。</p>
+            <p className="mt-5 rounded-xl border border-dashed border-slate-700 p-8 text-center text-sm text-slate-500">記録がありません。</p>
           ) : (
             <div className="mt-4 space-y-4">
               {filteredJournals.map((journal) => (
                 <div
                   key={journal.id}
-                  className="rounded-lg border p-4"
+                  className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 sm:p-5"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                     <div>
-                      <p className="font-bold">
+                      <p className="font-semibold text-slate-100">
                         {journal.category}｜{journal.target}
                       </p>
 
-                      <p className="text-sm text-gray-500">
+                      <p className="mt-1 text-xs text-slate-500">
                         {journal.tradeDate}
                       </p>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex w-full gap-2 sm:w-auto">
                       <button
                         type="button"
                         onClick={() => handleEdit(journal)}
-                        className="rounded bg-yellow-500 px-3 py-1 text-sm font-bold text-white"
+                        className="min-h-10 flex-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/20 sm:flex-none"
                       >
                         編集
                       </button>
@@ -587,14 +589,14 @@ export default function Home() {
                       <button
                         type="button"
                         onClick={() => handleDelete(journal.id)}
-                        className="rounded bg-red-500 px-3 py-1 text-sm font-bold text-white"
+                        className="min-h-10 flex-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20 sm:flex-none"
                       >
                         削除
                       </button>
                     </div>
                   </div>
 
-                  <div className="mt-3 space-y-1 text-sm">
+                  <div className="mt-4 grid gap-x-6 gap-y-2 border-t border-slate-800 pt-4 text-sm text-slate-300 sm:grid-cols-2">
                     <p>
                       市場環境：
                       {journal.marketEnvironment || "未選択"}
