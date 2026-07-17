@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import type { Value } from "react-calendar/dist/shared/types.js";
+import Dashboard from "./components/Dashboard";
 
 type Journal = {
   id: number;
@@ -246,16 +247,6 @@ export default function Home() {
     }
   };
 
-  const totalAmount = journals.reduce((sum, journal) => {
-    const num = Number(journal.amount);
-    return sum + (Number.isNaN(num) ? 0 : num);
-  }, 0);
-
-  const totalProfit = journals.reduce((sum, journal) => {
-    const num = Number(journal.profit);
-    return sum + (Number.isNaN(num) ? 0 : num);
-  }, 0);
-
   return (
     <main className="min-h-screen bg-gray-100 p-6">
       <div className="mx-auto max-w-4xl space-y-6">
@@ -267,26 +258,7 @@ export default function Home() {
           </p>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-xl bg-white p-5 shadow">
-            <p className="text-sm text-gray-500">記録数</p>
-            <p className="text-2xl font-bold">{journals.length}件</p>
-          </div>
-
-          <div className="rounded-xl bg-white p-5 shadow">
-            <p className="text-sm text-gray-500">投資金額合計</p>
-            <p className="text-2xl font-bold">
-              {totalAmount.toLocaleString()}円
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-white p-5 shadow">
-            <p className="text-sm text-gray-500">損益合計</p>
-            <p className="text-2xl font-bold">
-              {totalProfit.toLocaleString()}円
-            </p>
-          </div>
-        </section>
+        <Dashboard journals={journals} />
 
         <section className="rounded-xl bg-white p-6 shadow">
           <h2 className="text-xl font-bold">
