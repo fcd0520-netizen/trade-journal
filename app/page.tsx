@@ -248,9 +248,9 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 sm:px-6 sm:py-10">
+    <main className="ios-app min-h-screen px-4 py-6 sm:px-6 sm:py-10">
       <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
-        <section className="overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-900/60 p-6 shadow-2xl shadow-black/20 sm:p-8">
+        <section className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">Decision Performance</p>
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Trade Journal</h1>
 
@@ -261,7 +261,7 @@ export default function Home() {
 
         <Dashboard journals={journals} />
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10 sm:p-7">
+        <section className="ios-card rounded-2xl p-5 sm:p-7">
           <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
             {editingId !== null ? "記録を編集" : "新規記録"}
           </h2>
@@ -503,7 +503,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10 sm:p-7">
+        <section className="ios-card rounded-2xl p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">月間カレンダー</h2>
@@ -541,7 +541,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10 sm:p-7">
+        <section className="ios-card rounded-2xl p-5 sm:p-7">
           <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">記録一覧</h2>
 
           {selectedDate !== null && (
