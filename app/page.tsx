@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Calendar from "react-calendar";
+import type { Value } from "react-calendar/dist/shared/types.js";
 
 type Journal = {
   id: number;
@@ -19,12 +21,26 @@ type Journal = {
   result: string;
   review: string;
   ruleFollowed: boolean;
-  createdAt: string;
+  tradeDate: string;
 };
+
+type StoredJournal = Partial<Journal> & { createdAt?: string };
 
 const STORAGE_KEY = "trade-journals";
 
 const getToday = () => new Date().toISOString().split("T")[0];
+
+const toDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const fromDateKey = (dateKey: string) => {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
 
 export default function Home() {
   const [category, setCategory] = useState("株式");
@@ -47,6 +63,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [journals, setJournals] = useState<Journal[]>([]);
   const [search, setSearch] = useState("");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -56,7 +73,7 @@ export default function Home() {
 
     if (saved) {
       try {
-        const parsed = JSON.parse(saved) as Partial<Journal>[];
+        const parsed = JSON.parse(saved) as StoredJournal[];
 
         const restored: Journal[] = parsed.map((journal) => ({
           id: journal.id ?? Date.now(),
@@ -75,7 +92,7 @@ export default function Home() {
           result: journal.result ?? "未確定",
           review: journal.review ?? "",
           ruleFollowed: journal.ruleFollowed ?? false,
-          createdAt: journal.createdAt ?? getToday(),
+          tradeDate: journal.tradeDate ?? journal.createdAt ?? getToday(),
         }));
 
         setJournals(restored);
@@ -137,7 +154,7 @@ export default function Home() {
       result,
       review,
       ruleFollowed,
-      createdAt: tradeDate,
+      tradeDate,
     };
 
     if (editingId !== null) {
@@ -176,7 +193,7 @@ export default function Home() {
     setResult(journal.result);
     setReview(journal.review);
     setRuleFollowed(journal.ruleFollowed);
-    setTradeDate(journal.createdAt);
+    setTradeDate(journal.tradeDate);
 
     setEditingId(journal.id);
     setMessage("編集中です。内容を修正して「更新する」を押してください。");
@@ -204,8 +221,12 @@ export default function Home() {
     setMessage("記録を削除しました。");
   };
 
-  const filteredJournals = journals.filter((journal) =>
-    `
+  const journalDates = new Set(journals.map((journal) => journal.tradeDate));
+
+  const filteredJournals = journals.filter(
+    (journal) =>
+      (selectedDate === null || journal.tradeDate === selectedDate) &&
+      `
       ${journal.category}
       ${journal.target}
       ${journal.marketEnvironment}
@@ -218,6 +239,12 @@ export default function Home() {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
+
+  const handleCalendarChange = (value: Value) => {
+    if (value instanceof Date) {
+      setSelectedDate(toDateKey(value));
+    }
+  };
 
   const totalAmount = journals.reduce((sum, journal) => {
     const num = Number(journal.amount);
@@ -503,7 +530,51 @@ export default function Home() {
         </section>
 
         <section className="rounded-xl bg-white p-6 shadow">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold">月間カレンダー</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                印のある日には取引記録があります。
+              </p>
+            </div>
+
+            {selectedDate !== null && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate(null)}
+                className="rounded bg-gray-600 px-4 py-2 text-sm font-bold text-white"
+              >
+                すべて表示
+              </button>
+            )}
+          </div>
+
+          <div className="mt-5 flex justify-center">
+            <Calendar
+              locale="ja-JP"
+              value={selectedDate ? fromDateKey(selectedDate) : null}
+              onChange={handleCalendarChange}
+              calendarType="gregory"
+              tileContent={({ date, view }) =>
+                view === "month" && journalDates.has(toDateKey(date)) ? (
+                  <span
+                    className="mx-auto mt-1 block h-2 w-2 rounded-full bg-blue-600"
+                    aria-label="記録あり"
+                  />
+                ) : null
+              }
+            />
+          </div>
+        </section>
+
+        <section className="rounded-xl bg-white p-6 shadow">
           <h2 className="text-xl font-bold">記録一覧</h2>
+
+          {selectedDate !== null && (
+            <p className="mt-2 text-sm font-medium text-blue-700">
+              {selectedDate} の記録を表示中
+            </p>
+          )}
 
           <input
             className="mt-4 w-full rounded border p-2"
@@ -528,7 +599,7 @@ export default function Home() {
                       </p>
 
                       <p className="text-sm text-gray-500">
-                        {journal.createdAt}
+                        {journal.tradeDate}
                       </p>
                     </div>
 
