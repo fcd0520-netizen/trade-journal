@@ -5,27 +5,9 @@ import Calendar from "react-calendar";
 import type { Value } from "react-calendar/dist/shared/types.js";
 import Dashboard from "./components/Dashboard";
 import Sidebar from "./components/Sidebar";
-import { formatProfitYen, formatYen, normalizeStoredMoney } from "./lib/currency";
-
-type Journal = {
-  id: number;
-  category: string;
-  target: string;
-
-  marketEnvironment: string;
-  marketTheme: string;
-  majorEvent: string;
-
-  amount: string;
-  profit: string;
-  decision: string;
-  reason: string;
-  emotion: string;
-  result: string;
-  review: string;
-  ruleFollowed: boolean;
-  tradeDate: string;
-};
+import TradeDetail from "./components/TradeDetail";
+import { formatYen, normalizeStoredMoney } from "./lib/currency";
+import type { ActiveJournal, Journal, TradeCategory } from "./types/journal";
 
 type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
   amount?: unknown;
@@ -33,8 +15,6 @@ type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
   createdAt?: string;
 };
 
-type TradeCategory = "株式" | "FX";
-type ActiveJournal = Journal & { category: TradeCategory };
 type CategoryFilter = "すべて" | TradeCategory;
 type ResultFilter = "すべて" | "未確定" | "勝ち" | "負け";
 type RuleFilter = "すべて" | "守った" | "守らなかった";
@@ -94,6 +74,7 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("すべて");
   const [resultFilter, setResultFilter] = useState<ResultFilter>("すべて");
   const [ruleFilter, setRuleFilter] = useState<RuleFilter>("すべて");
+  const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -181,7 +162,7 @@ export default function Home() {
     if (
       isFormDirty &&
       !window.confirm(
-        "入力内容をリセットしますか？保存済みの記録には影響しません。"
+        "入力内容をリセットしますか？\n保存済みデータには影響しません。"
       )
     ) {
       return;
@@ -258,9 +239,9 @@ export default function Home() {
     setEditingId(journal.id);
     setMessage("編集中です。内容を修正して「更新する」を押してください。");
 
-    window.scrollTo({
-      top: 0,
+    document.getElementById("new-entry")?.scrollIntoView({
       behavior: "smooth",
+      block: "start",
     });
   };
 
@@ -309,6 +290,9 @@ export default function Home() {
       .toLowerCase()
       .includes(search.toLowerCase())
   );
+  const selectedJournal = activeJournals.find(
+    (journal) => journal.id === selectedTradeId
+  );
 
   const hasActiveFilters =
     selectedDate !== null ||
@@ -343,7 +327,7 @@ export default function Home() {
         </section>
 
         <div id="dashboard" className="scroll-mt-8">
-          <Dashboard journals={activeJournals} />
+          <Dashboard journals={activeJournals} onEdit={handleEdit} />
         </div>
 
         <section id="new-entry" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
@@ -485,7 +469,7 @@ export default function Home() {
                 inputMode="numeric"
                 step="1"
                 className="mt-1 w-full rounded border p-2"
-                placeholder="例：500000（円）"
+                placeholder="100000"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
@@ -655,6 +639,17 @@ export default function Home() {
         </section>
 
         <section id="journal-list" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
+          {selectedJournal ? (
+            <TradeDetail
+              journal={selectedJournal}
+              onBack={() => setSelectedTradeId(null)}
+              onEdit={(journal) => {
+                setSelectedTradeId(null);
+                handleEdit(journal);
+              }}
+            />
+          ) : (
+          <>
           <div>
             <div>
               <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">記録一覧</h2>
@@ -743,7 +738,20 @@ export default function Home() {
               {filteredJournals.map((journal) => (
                 <div
                   key={journal.id}
-                  className="border-b border-slate-800 p-4 last:border-b-0 sm:p-5"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${journal.tradeDate} ${journal.category} ${journal.target}の詳細を表示`}
+                  onClick={() => setSelectedTradeId(journal.id)}
+                  onKeyDown={(event) => {
+                    if (
+                      event.target === event.currentTarget &&
+                      (event.key === "Enter" || event.key === " ")
+                    ) {
+                      event.preventDefault();
+                      setSelectedTradeId(journal.id);
+                    }
+                  }}
+                  className="cursor-pointer border-b border-slate-800 p-4 transition last:border-b-0 hover:bg-slate-800/40 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:p-5"
                 >
                   <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                     <div>
@@ -764,7 +772,10 @@ export default function Home() {
                     <div className="flex w-full gap-2 sm:w-auto">
                       <button
                         type="button"
-                        onClick={() => handleEdit(journal)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleEdit(journal);
+                        }}
                         className="min-h-10 flex-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-300 transition hover:bg-amber-500/20 sm:flex-none"
                       >
                         編集
@@ -772,7 +783,10 @@ export default function Home() {
 
                       <button
                         type="button"
-                        onClick={() => handleDelete(journal.id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleDelete(journal.id);
+                        }}
                         className="min-h-10 flex-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-300 transition hover:bg-rose-500/20 sm:flex-none"
                       >
                         削除
@@ -803,7 +817,7 @@ export default function Home() {
 
                     <p>
                       損益：
-                      {formatProfitYen(journal.profit) ?? "未入力"}
+                      {formatYen(journal.profit) ?? "未入力"}
                     </p>
 
                     <p>勝敗：{journal.result || "未確定"}</p>
@@ -823,6 +837,8 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          )}
+          </>
           )}
         </section>
       </div>
