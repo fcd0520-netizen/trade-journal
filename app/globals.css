@@ -3,6 +3,7 @@
 :root {
   --background: #060b16;
   --foreground: #f8fafc;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -12,13 +13,33 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html,
+body,
+#app-root {
+  min-height: 100%;
+  background-color: #060b16;
+}
+
+html {
+  background: #060b16 !important;
+}
+
 body {
-  background: var(--background);
+  margin: 0;
+  background: #060b16 !important;
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
+#app-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: #060b16;
+}
+
 .ios-app {
+  min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 50% -12%, rgba(37, 99, 235, .16), transparent 32rem),
     #060b16;

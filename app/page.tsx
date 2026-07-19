@@ -5,6 +5,7 @@ import Calendar from "react-calendar";
 import type { Value } from "react-calendar/dist/shared/types.js";
 import Dashboard from "./components/Dashboard";
 import Sidebar from "./components/Sidebar";
+import { formatProfitYen, formatYen, normalizeStoredMoney } from "./lib/currency";
 
 type Journal = {
   id: number;
@@ -26,9 +27,15 @@ type Journal = {
   tradeDate: string;
 };
 
-type StoredJournal = Partial<Journal> & { createdAt?: string };
+type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
+  amount?: unknown;
+  profit?: unknown;
+  createdAt?: string;
+};
 
-type CategoryFilter = "すべて" | "株式" | "FX" | "競馬";
+type TradeCategory = "株式" | "FX";
+type ActiveJournal = Journal & { category: TradeCategory };
+type CategoryFilter = "すべて" | TradeCategory;
 type ResultFilter = "すべて" | "未確定" | "勝ち" | "負け";
 type RuleFilter = "すべて" | "守った" | "守らなかった";
 
@@ -48,11 +55,12 @@ const fromDateKey = (dateKey: string) => {
   return new Date(year, month - 1, day);
 };
 
-const categoryBadgeClass = (category: string) => {
+const isTradeCategory = (category: string): category is TradeCategory =>
+  category === "株式" || category === "FX";
+
+const categoryBadgeClass = (category: TradeCategory) => {
   if (category === "株式") return "border-blue-400/25 bg-blue-500/15 text-blue-300";
-  if (category === "FX") return "border-violet-400/25 bg-violet-500/15 text-violet-300";
-  if (category === "競馬") return "border-amber-400/25 bg-amber-500/15 text-amber-300";
-  return "border-slate-500/25 bg-slate-500/15 text-slate-300";
+  return "border-violet-400/25 bg-violet-500/15 text-violet-300";
 };
 
 const resultBadgeClass = (result: string) => {
@@ -62,7 +70,7 @@ const resultBadgeClass = (result: string) => {
 };
 
 export default function Home() {
-  const [category, setCategory] = useState("株式");
+  const [category, setCategory] = useState<TradeCategory>("株式");
   const [target, setTarget] = useState("");
 
   const [marketEnvironment, setMarketEnvironment] = useState("未選択");
@@ -106,8 +114,8 @@ export default function Home() {
           marketTheme: journal.marketTheme ?? "未選択",
           majorEvent: journal.majorEvent ?? "未選択",
 
-          amount: journal.amount ?? "",
-          profit: journal.profit ?? "",
+          amount: normalizeStoredMoney(journal.amount),
+          profit: normalizeStoredMoney(journal.profit),
           decision: journal.decision ?? "買い",
           reason: journal.reason ?? "",
           emotion: journal.emotion ?? "冷静",
@@ -151,6 +159,36 @@ export default function Home() {
     setTradeDate(getToday());
 
     setEditingId(null);
+  };
+
+  const isFormDirty =
+    category !== "株式" ||
+    target !== "" ||
+    marketEnvironment !== "未選択" ||
+    marketTheme !== "未選択" ||
+    majorEvent !== "未選択" ||
+    amount !== "" ||
+    profit !== "" ||
+    decision !== "買い" ||
+    reason !== "" ||
+    emotion !== "冷静" ||
+    result !== "未確定" ||
+    review !== "" ||
+    ruleFollowed ||
+    tradeDate !== getToday();
+
+  const handleManualReset = () => {
+    if (
+      isFormDirty &&
+      !window.confirm(
+        "入力内容をリセットしますか？保存済みの記録には影響しません。"
+      )
+    ) {
+      return;
+    }
+
+    resetForm();
+    setMessage("入力内容をリセットしました。");
   };
 
   const handleSave = () => {
@@ -199,7 +237,7 @@ export default function Home() {
     resetForm();
   };
 
-  const handleEdit = (journal: Journal) => {
+  const handleEdit = (journal: ActiveJournal) => {
     setCategory(journal.category);
     setTarget(journal.target);
 
@@ -243,9 +281,15 @@ export default function Home() {
     setMessage("記録を削除しました。");
   };
 
-  const journalDates = new Set(journals.map((journal) => journal.tradeDate));
+  const activeJournals = journals.filter(
+    (journal): journal is ActiveJournal => isTradeCategory(journal.category)
+  );
 
-  const filteredJournals = journals.filter(
+  const journalDates = new Set(
+    activeJournals.map((journal) => journal.tradeDate)
+  );
+
+  const filteredJournals = activeJournals.filter(
     (journal) =>
       (selectedDate === null || journal.tradeDate === selectedDate) &&
       (categoryFilter === "すべて" || journal.category === categoryFilter) &&
@@ -286,7 +330,7 @@ export default function Home() {
   };
 
   return (
-    <main className="ios-app min-h-screen px-4 py-20 sm:px-6 sm:py-12 lg:pl-[calc(16rem+1.5rem)]">
+    <main className="ios-app min-h-screen bg-[#060b16] px-4 py-20 sm:px-6 sm:py-12 lg:pl-[calc(16rem+1.5rem)]">
       <Sidebar />
       <div className="mx-auto max-w-6xl space-y-7 sm:space-y-9">
         <section className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
@@ -299,13 +343,37 @@ export default function Home() {
         </section>
 
         <div id="dashboard" className="scroll-mt-8">
-          <Dashboard journals={journals} />
+          <Dashboard journals={activeJournals} />
         </div>
 
         <section id="new-entry" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
-          <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
-            {editingId !== null ? "記録を編集" : "新規記録"}
-          </h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
+              {editingId !== null ? "記録を編集" : "新規記録"}
+            </h2>
+
+            <button
+              type="button"
+              onClick={handleManualReset}
+              className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-slate-700 bg-transparent px-3.5 py-2 text-sm font-semibold text-slate-400 transition hover:border-slate-600 hover:bg-slate-800/60 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+              aria-label="新規記録フォームをリセット"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              リセット
+            </button>
+          </div>
 
           {editingId !== null && (
             <p className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm font-medium text-amber-300">
@@ -320,12 +388,10 @@ export default function Home() {
               <select
                 className="mt-1 w-full rounded border p-2"
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => setCategory(e.target.value as TradeCategory)}
               >
                 <option>株式</option>
                 <option>FX</option>
-                <option>競馬</option>
-                <option>その他</option>
               </select>
             </div>
 
@@ -345,7 +411,7 @@ export default function Home() {
 
               <input
                 className="mt-1 w-full rounded border p-2"
-                placeholder="例：TEAM、MSFT、函館記念"
+                placeholder="例：TEAM、MSFT、USD/JPY"
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
               />
@@ -411,23 +477,29 @@ export default function Home() {
 
             <div>
               <label className="block font-medium">
-                投資金額（任意）
+                投資金額（任意・円）
               </label>
 
               <input
+                type="number"
+                inputMode="numeric"
+                step="1"
                 className="mt-1 w-full rounded border p-2"
-                placeholder="例：50000"
+                placeholder="例：500000（円）"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block font-medium">損益</label>
+              <label className="block font-medium">損益（円）</label>
 
               <input
+                type="number"
+                inputMode="numeric"
+                step="1"
                 className="mt-1 w-full rounded border p-2"
-                placeholder="例：10000 または -3500"
+                placeholder="利益 10000 / 損失 -3500"
                 value={profit}
                 onChange={(e) => setProfit(e.target.value)}
               />
@@ -587,7 +659,7 @@ export default function Home() {
             <div>
               <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">記録一覧</h2>
               <p className="mt-1 text-sm text-slate-500" aria-live="polite">
-                {journals.length}件中 {filteredJournals.length}件を表示
+                {activeJournals.length}件中 {filteredJournals.length}件を表示
               </p>
             </div>
           </div>
@@ -629,7 +701,6 @@ export default function Home() {
                 <option>すべて</option>
                 <option>株式</option>
                 <option>FX</option>
-                <option>競馬</option>
               </select>
               </div>
 
@@ -727,16 +798,12 @@ export default function Home() {
 
                     <p>
                       投資金額：
-                      {journal.amount
-                        ? `${journal.amount}円`
-                        : "未入力"}
+                      {formatYen(journal.amount) ?? "未入力"}
                     </p>
 
                     <p>
                       損益：
-                      {journal.profit
-                        ? `${journal.profit}円`
-                        : "未入力"}
+                      {formatProfitYen(journal.profit) ?? "未入力"}
                     </p>
 
                     <p>勝敗：{journal.result || "未確定"}</p>
