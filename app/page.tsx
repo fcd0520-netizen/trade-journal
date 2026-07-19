@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import type { Value } from "react-calendar/dist/shared/types.js";
 import Dashboard from "./components/Dashboard";
+import Sidebar from "./components/Sidebar";
 
 type Journal = {
   id: number;
@@ -27,6 +28,10 @@ type Journal = {
 
 type StoredJournal = Partial<Journal> & { createdAt?: string };
 
+type CategoryFilter = "すべて" | "株式" | "FX" | "競馬";
+type ResultFilter = "すべて" | "未確定" | "勝ち" | "負け";
+type RuleFilter = "すべて" | "守った" | "守らなかった";
+
 const STORAGE_KEY = "trade-journals";
 
 const getToday = () => new Date().toISOString().split("T")[0];
@@ -41,6 +46,19 @@ const toDateKey = (date: Date) => {
 const fromDateKey = (dateKey: string) => {
   const [year, month, day] = dateKey.split("-").map(Number);
   return new Date(year, month - 1, day);
+};
+
+const categoryBadgeClass = (category: string) => {
+  if (category === "株式") return "border-blue-400/25 bg-blue-500/15 text-blue-300";
+  if (category === "FX") return "border-violet-400/25 bg-violet-500/15 text-violet-300";
+  if (category === "競馬") return "border-amber-400/25 bg-amber-500/15 text-amber-300";
+  return "border-slate-500/25 bg-slate-500/15 text-slate-300";
+};
+
+const resultBadgeClass = (result: string) => {
+  if (result === "勝ち") return "border-emerald-400/25 bg-emerald-500/15 text-emerald-300";
+  if (result === "負け") return "border-rose-400/25 bg-rose-500/15 text-rose-300";
+  return "border-slate-500/25 bg-slate-500/15 text-slate-300";
 };
 
 export default function Home() {
@@ -65,6 +83,9 @@ export default function Home() {
   const [journals, setJournals] = useState<Journal[]>([]);
   const [search, setSearch] = useState("");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("すべて");
+  const [resultFilter, setResultFilter] = useState<ResultFilter>("すべて");
+  const [ruleFilter, setRuleFilter] = useState<RuleFilter>("すべて");
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -227,6 +248,10 @@ export default function Home() {
   const filteredJournals = journals.filter(
     (journal) =>
       (selectedDate === null || journal.tradeDate === selectedDate) &&
+      (categoryFilter === "すべて" || journal.category === categoryFilter) &&
+      (resultFilter === "すべて" || journal.result === resultFilter) &&
+      (ruleFilter === "すべて" ||
+        journal.ruleFollowed === (ruleFilter === "守った")) &&
       `
       ${journal.category}
       ${journal.target}
@@ -241,6 +266,19 @@ export default function Home() {
       .includes(search.toLowerCase())
   );
 
+  const hasActiveFilters =
+    selectedDate !== null ||
+    categoryFilter !== "すべて" ||
+    resultFilter !== "すべて" ||
+    ruleFilter !== "すべて";
+
+  const handleClearFilters = () => {
+    setCategoryFilter("すべて");
+    setResultFilter("すべて");
+    setRuleFilter("すべて");
+    setSelectedDate(null);
+  };
+
   const handleCalendarChange = (value: Value) => {
     if (value instanceof Date) {
       setSelectedDate(toDateKey(value));
@@ -248,8 +286,9 @@ export default function Home() {
   };
 
   return (
-    <main className="ios-app min-h-screen px-4 py-6 sm:px-6 sm:py-10">
-      <div className="mx-auto max-w-6xl space-y-5 sm:space-y-6">
+    <main className="ios-app min-h-screen px-4 py-20 sm:px-6 sm:py-12 lg:pl-[calc(16rem+1.5rem)]">
+      <Sidebar />
+      <div className="mx-auto max-w-6xl space-y-7 sm:space-y-9">
         <section className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">Decision Performance</p>
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Trade Journal</h1>
@@ -259,9 +298,11 @@ export default function Home() {
           </p>
         </section>
 
-        <Dashboard journals={journals} />
+        <div id="dashboard" className="scroll-mt-8">
+          <Dashboard journals={journals} />
+        </div>
 
-        <section className="ios-card rounded-2xl p-5 sm:p-7">
+        <section id="new-entry" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
           <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
             {editingId !== null ? "記録を編集" : "新規記録"}
           </h2>
@@ -503,7 +544,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="ios-card rounded-2xl p-5 sm:p-7">
+        <section id="calendar" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">月間カレンダー</h2>
@@ -541,8 +582,15 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="ios-card rounded-2xl p-5 sm:p-7">
-          <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">記録一覧</h2>
+        <section id="journal-list" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
+          <div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">記録一覧</h2>
+              <p className="mt-1 text-sm text-slate-500" aria-live="polite">
+                {journals.length}件中 {filteredJournals.length}件を表示
+              </p>
+            </div>
+          </div>
 
           {selectedDate !== null && (
             <p className="mt-2 text-sm font-medium text-sky-400">
@@ -550,27 +598,92 @@ export default function Home() {
             </p>
           )}
 
-          <input
-            className="mt-5 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
-            placeholder="検索：TEAM、AI、FOMC、買い など"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="mt-5 rounded-2xl border border-slate-800 bg-slate-950/60 p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="font-semibold text-slate-100">記録を絞り込む</h3>
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                disabled={!hasActiveFilters}
+                className="min-h-10 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                フィルターをクリア
+              </button>
+            </div>
+
+            <input
+              className="mt-4 w-full"
+              placeholder="検索：TEAM、AI、FOMC、買い など"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div>
+              <label htmlFor="category-filter">カテゴリ</label>
+              <select
+                id="category-filter"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value as CategoryFilter)}
+              >
+                <option>すべて</option>
+                <option>株式</option>
+                <option>FX</option>
+                <option>競馬</option>
+              </select>
+              </div>
+
+              <div>
+              <label htmlFor="result-filter">結果</label>
+              <select
+                id="result-filter"
+                value={resultFilter}
+                onChange={(e) => setResultFilter(e.target.value as ResultFilter)}
+              >
+                <option>すべて</option>
+                <option>未確定</option>
+                <option>勝ち</option>
+                <option>負け</option>
+              </select>
+              </div>
+
+              <div>
+              <label htmlFor="rule-filter">ルール順守</label>
+              <select
+                id="rule-filter"
+                value={ruleFilter}
+                onChange={(e) => setRuleFilter(e.target.value as RuleFilter)}
+              >
+                <option>すべて</option>
+                <option>守った</option>
+                <option>守らなかった</option>
+              </select>
+              </div>
+            </div>
+          </div>
 
           {filteredJournals.length === 0 ? (
-            <p className="mt-5 rounded-xl border border-dashed border-slate-700 p-8 text-center text-sm text-slate-500">記録がありません。</p>
+            <div className="mt-5 rounded-xl border border-dashed border-slate-700 p-8 text-center">
+              <p className="font-semibold text-slate-300">条件に一致する記録がありません</p>
+              <p className="mt-1 text-sm text-slate-500">検索語やフィルター条件を変更してお試しください。</p>
+            </div>
           ) : (
-            <div className="mt-4 space-y-4">
+            <div className="mt-5 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950/40">
               {filteredJournals.map((journal) => (
                 <div
                   key={journal.id}
-                  className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 sm:p-5"
+                  className="border-b border-slate-800 p-4 last:border-b-0 sm:p-5"
                 >
                   <div className="flex flex-col items-start justify-between gap-4 sm:flex-row">
                     <div>
-                      <p className="font-semibold text-slate-100">
-                        {journal.category}｜{journal.target}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${categoryBadgeClass(journal.category)}`}>{journal.category}</span>
+                        <p className="font-semibold text-slate-100">{journal.target}</p>
+                        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${resultBadgeClass(journal.result)}`}>{journal.result || "未確定"}</span>
+                        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${journal.ruleFollowed ? "border-emerald-400/25 bg-emerald-500/15 text-emerald-300" : "border-rose-400/25 bg-rose-500/15 text-rose-300"}`}>
+                          {journal.ruleFollowed ? "守った" : "守らなかった"}
+                        </span>
+                      </div>
 
                       <p className="mt-1 text-xs text-slate-500">
                         {journal.tradeDate}

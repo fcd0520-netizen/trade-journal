@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f2f2f7;
-  --foreground: #1c1c1e;
+  --background: #060b16;
+  --foreground: #f8fafc;
 }
 
 @theme inline {
@@ -18,20 +18,19 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-/* iOS-inspired application surface */
 .ios-app {
   background:
-    radial-gradient(circle at 50% -10%, rgba(0, 122, 255, .12), transparent 28rem),
-    #f2f2f7;
-  color: #1c1c1e;
+    radial-gradient(circle at 50% -12%, rgba(37, 99, 235, .16), transparent 32rem),
+    #060b16;
+  color: #f8fafc;
   padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
 }
 
 .ios-hero {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, .75);
-  background: linear-gradient(145deg, #087bfa 0%, #0064dc 100%);
-  box-shadow: 0 12px 32px rgba(0, 82, 180, .2);
+  border: 1px solid rgba(96, 165, 250, .18);
+  background: linear-gradient(145deg, #101d38 0%, #0b1530 48%, #07101f 100%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .35);
 }
 .ios-hero::after {
   content: "";
@@ -47,50 +46,30 @@ body {
 .ios-hero > p:first-child { opacity: .72; }
 
 .ios-card, .ios-stat {
-  border: 1px solid rgba(60, 60, 67, .08);
-  background: rgba(255, 255, 255, .88);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, .055);
+  border: 1px solid rgba(148, 163, 184, .12);
+  background: rgba(17, 24, 39, .9);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .22);
   backdrop-filter: blur(20px) saturate(150%);
 }
 
-.ios-app h2, .ios-stat p:last-child { color: #1c1c1e !important; }
-.ios-app label, .ios-app .text-slate-300, .ios-app .text-slate-400 { color: #48484a !important; }
-.ios-app .text-slate-500, .ios-app .text-slate-600 { color: #8e8e93 !important; }
+.ios-app h2 { color: #f8fafc; }
 
 .ios-app input:not([type="checkbox"]),
 .ios-app select,
 .ios-app textarea {
   min-height: 44px;
-  border: 1px solid rgba(60, 60, 67, .16) !important;
+  border: 1px solid #334155 !important;
   border-radius: 12px !important;
-  background: #f2f2f7 !important;
-  color: #1c1c1e !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+  background: #080f1d !important;
+  color: #f1f5f9 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
 }
-.ios-app input::placeholder, .ios-app textarea::placeholder { color: #aeaeb2 !important; }
+.ios-app input::placeholder, .ios-app textarea::placeholder { color: #64748b !important; }
 .ios-app input:focus, .ios-app select:focus, .ios-app textarea:focus {
   border-color: #007aff !important;
   box-shadow: 0 0 0 3px rgba(0,122,255,.14) !important;
 }
-.ios-app button { border-radius: 12px !important; }
-.ios-app button.bg-sky-600 { background: #007aff !important; }
-.ios-app .bg-slate-950\/50, .ios-app .bg-slate-950\/60, .ios-app .bg-slate-950\/70 {
-  background: #f9f9fb !important;
-}
-.ios-app .border-slate-800, .ios-app .border-slate-700 { border-color: rgba(60,60,67,.12) !important; }
-
-.react-calendar { color: #1c1c1e; }
-.react-calendar button:enabled:hover,
-.react-calendar button:enabled:focus { background: #e5e5ea; }
-.react-calendar__navigation button { color: #007aff; }
-.react-calendar__navigation button:disabled { color: #c7c7cc; }
-.react-calendar__month-view__weekdays { color: #8e8e93; }
-.react-calendar__month-view__days__day--weekend { color: #ff3b30; }
-.react-calendar__month-view__days__day--neighboringMonth { color: #c7c7cc; }
-.react-calendar__tile--now { background: #e5f1ff; color: #007aff; }
-.react-calendar__tile--active,
-.react-calendar__tile--active:enabled:hover,
-.react-calendar__tile--active:enabled:focus { background: #007aff; color: white; }
+.ios-app button { border-radius: 12px; }
 
 @media (max-width: 640px) {
   .ios-app { padding-top: max(1.25rem, env(safe-area-inset-top)); }
