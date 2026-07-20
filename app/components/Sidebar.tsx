@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 const menuItems = [
   { id: "dashboard", label: "ダッシュボード", icon: "dashboard" },
+  { id: "analytics", label: "Analytics", icon: "analytics" },
   { id: "new-entry", label: "新規記録", icon: "plus" },
   { id: "journal-list", label: "記録一覧", icon: "list" },
   { id: "calendar", label: "カレンダー", icon: "calendar" },
@@ -15,6 +16,7 @@ type IconName = (typeof menuItems)[number]["icon"];
 function MenuIcon({ name }: { name: IconName }) {
   const paths: Record<IconName, React.ReactNode> = {
     dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
+    analytics: <><path d="M4 19V9M10 19V5M16 19v-7M22 19V3" /><path d="M2 19h20" /></>,
     plus: <><path d="M12 5v14M5 12h14" /><rect x="3" y="3" width="18" height="18" rx="4" /></>,
     list: <><path d="M9 6h11M9 12h11M9 18h11" /><path d="M4 6h.01M4 12h.01M4 18h.01" /></>,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>,

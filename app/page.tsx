@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Calendar from "react-calendar";
 import type { Value } from "react-calendar/dist/shared/types.js";
+import Analytics from "./components/Analytics";
 import Dashboard from "./components/Dashboard";
 import Sidebar from "./components/Sidebar";
 import TradeDetail from "./components/TradeDetail";
@@ -329,6 +330,8 @@ export default function Home() {
         <div id="dashboard" className="scroll-mt-8">
           <Dashboard journals={activeJournals} onEdit={handleEdit} />
         </div>
+
+        <Analytics journals={activeJournals} />
 
         <section id="new-entry" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
           <div className="flex items-center justify-between gap-4">

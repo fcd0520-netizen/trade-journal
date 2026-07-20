@@ -9,6 +9,13 @@ type DashboardProps = {
 const toPercentage = (numerator: number, denominator: number) =>
   denominator === 0 ? 0 : Math.round((numerator / denominator) * 100);
 
+const profitColor = (profit: number) =>
+  profit > 0
+    ? "text-emerald-300"
+    : profit < 0
+      ? "text-rose-300"
+      : "text-slate-300";
+
 const getCurrentMonthKey = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -34,18 +41,26 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
   const monthlyWins = monthlyCompletedResults.filter(
     (journal) => journal.result === "勝ち"
   ).length;
+  const monthlyDecidedResults = monthlyJournals.filter((journal) =>
+    ["勝ち", "負け"].includes(journal.result)
+  );
+  const monthlyDecidedWins = monthlyDecidedResults.filter(
+    (journal) => journal.result === "勝ち"
+  ).length;
+  const monthlyProfit = monthlyJournals.reduce(
+    (total, journal) => total + (parseMoney(journal.profit) ?? 0),
+    0
+  );
+  const monthlyRulesFollowed = monthlyJournals.filter(
+    (journal) => journal.ruleFollowed
+  ).length;
   const recentJournals = [...journals]
     .sort(
       (a, b) =>
         b.tradeDate.localeCompare(a.tradeDate) || b.id - a.id
     )
     .slice(0, 3);
-  const totalProfitColor =
-    totalProfit > 0
-      ? "text-emerald-300"
-      : totalProfit < 0
-        ? "text-rose-300"
-        : "text-slate-300";
+  const totalProfitColor = profitColor(totalProfit);
 
   const cards = [
     { label: "総記録数", value: `${journals.length}件`, icon: "▦", valueClass: "text-white" },
@@ -62,6 +77,42 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Overview</p>
         <h2 id="dashboard-title" className="mt-1 text-xl font-semibold text-white sm:text-2xl">Dashboard</h2>
       </div>
+
+      <section aria-labelledby="today-title" className="ios-card overflow-hidden rounded-2xl border-blue-400/20 bg-gradient-to-br from-blue-950/70 via-slate-900/95 to-slate-950/95 p-5 sm:p-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Today</p>
+          <h3 id="today-title" className="mt-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
+            今日も、良い意思決定を積み重ねよう。
+          </h3>
+        </div>
+
+        <dl className="mt-5 grid grid-cols-3 divide-x divide-slate-800 rounded-xl border border-slate-800 bg-slate-950/45 py-3 sm:mt-6 sm:py-4">
+          <div className="min-w-0 px-2 text-center sm:px-4">
+            <dt className="text-[10px] font-medium leading-4 text-slate-500 sm:text-xs">今月の勝率</dt>
+            <dd className="mt-1 break-words text-lg font-semibold tracking-tight text-white sm:text-2xl">
+              {monthlyDecidedResults.length === 0
+                ? "—"
+                : `${toPercentage(monthlyDecidedWins, monthlyDecidedResults.length)}%`}
+            </dd>
+          </div>
+          <div className="min-w-0 px-2 text-center sm:px-4">
+            <dt className="text-[10px] font-medium leading-4 text-slate-500 sm:text-xs">今月の損益</dt>
+            <dd className={`mt-1 break-words text-base font-semibold tracking-tight sm:text-2xl ${monthlyJournals.length === 0 ? "text-slate-500" : profitColor(monthlyProfit)}`}>
+              {monthlyJournals.length === 0
+                ? "—"
+                : formatProfitYen(monthlyProfit) ?? "0円"}
+            </dd>
+          </div>
+          <div className="min-w-0 px-2 text-center sm:px-4">
+            <dt className="text-[10px] font-medium leading-4 text-slate-500 sm:text-xs">ルール遵守率</dt>
+            <dd className="mt-1 break-words text-lg font-semibold tracking-tight text-white sm:text-2xl">
+              {monthlyJournals.length === 0
+                ? "—"
+                : `${toPercentage(monthlyRulesFollowed, monthlyJournals.length)}%`}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       <div className="ios-dashboard grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {cards.map((card) => (
