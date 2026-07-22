@@ -83,10 +83,26 @@ export default function Sidebar() {
 
   const navigation = (
     <nav aria-label="ページ内メニュー" className="mt-8 space-y-1.5">
+      <button
+        type="button"
+        onClick={() => navigateTo("dashboard")}
+        aria-current={activeSection === "dashboard" ? "location" : undefined}
+        className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/70 ${
+          activeSection === "dashboard"
+            ? "bg-blue-500/15 text-blue-300 ring-1 ring-inset ring-blue-400/20"
+            : "text-slate-400 hover:bg-slate-800/70 hover:text-slate-100"
+        }`}
+      >
+        <MenuIcon name="dashboard" />
+        ダッシュボード
+      </button>
+      <Link href="/watchlist" className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium text-slate-400 transition hover:bg-slate-800/70 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/70">
+        <MenuIcon name="list" />Watchlist
+      </Link>
       <Link href="/paper-trade" className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium text-slate-400 transition hover:bg-slate-800/70 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/70">
         <MenuIcon name="list" />Paper Trade
       </Link>
-      {menuItems.map((item) => {
+      {menuItems.filter((item) => item.id !== "dashboard").map((item) => {
         const isActive = activeSection === item.id;
         return (
           <button
