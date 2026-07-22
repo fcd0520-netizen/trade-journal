@@ -1,4 +1,5 @@
 export type TradeCategory = "株式" | "FX";
+export type Currency = "USD" | "JPY";
 
 export type Journal = {
   id: number;
@@ -7,7 +8,11 @@ export type Journal = {
   marketEnvironment: string;
   marketTheme: string;
   majorEvent: string;
-  amount: string;
+  /** @deprecated 旧バージョンの保存データ読み込み専用 */
+  amount?: string;
+  currency: Currency;
+  shareCount: string;
+  acquisitionPrice: string;
   profit: string;
   decision: string;
   reason: string;

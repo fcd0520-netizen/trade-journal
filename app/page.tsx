@@ -7,8 +7,8 @@ import Analytics from "./components/Analytics";
 import Dashboard from "./components/Dashboard";
 import Sidebar from "./components/Sidebar";
 import TradeDetail from "./components/TradeDetail";
-import { formatYen, normalizeStoredMoney } from "./lib/currency";
-import type { ActiveJournal, Journal, TradeCategory } from "./types/journal";
+import { calculateInvestment, formatCurrency, formatYen, normalizeStoredMoney } from "./lib/currency";
+import type { ActiveJournal, Currency, Journal, TradeCategory } from "./types/journal";
 
 type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
   amount?: unknown;
@@ -59,6 +59,9 @@ export default function Home() {
   const [majorEvent, setMajorEvent] = useState("未選択");
 
   const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState<Currency>("USD");
+  const [shareCount, setShareCount] = useState("");
+  const [acquisitionPrice, setAcquisitionPrice] = useState("");
   const [profit, setProfit] = useState("");
   const [decision, setDecision] = useState("買い");
   const [reason, setReason] = useState("");
@@ -97,6 +100,9 @@ export default function Home() {
           majorEvent: journal.majorEvent ?? "未選択",
 
           amount: normalizeStoredMoney(journal.amount),
+          currency: journal.currency === "JPY" ? "JPY" : "USD",
+          shareCount: normalizeStoredMoney(journal.shareCount),
+          acquisitionPrice: normalizeStoredMoney(journal.acquisitionPrice),
           profit: normalizeStoredMoney(journal.profit),
           decision: journal.decision ?? "買い",
           reason: journal.reason ?? "",
@@ -131,6 +137,9 @@ export default function Home() {
     setMajorEvent("未選択");
 
     setAmount("");
+    setCurrency("USD");
+    setShareCount("");
+    setAcquisitionPrice("");
     setProfit("");
     setDecision("買い");
     setReason("");
@@ -149,7 +158,9 @@ export default function Home() {
     marketEnvironment !== "未選択" ||
     marketTheme !== "未選択" ||
     majorEvent !== "未選択" ||
-    amount !== "" ||
+    currency !== "USD" ||
+    shareCount !== "" ||
+    acquisitionPrice !== "" ||
     profit !== "" ||
     decision !== "買い" ||
     reason !== "" ||
@@ -189,6 +200,9 @@ export default function Home() {
       majorEvent,
 
       amount,
+      currency,
+      shareCount,
+      acquisitionPrice,
       profit,
       decision,
       reason,
@@ -227,7 +241,10 @@ export default function Home() {
     setMarketTheme(journal.marketTheme || "未選択");
     setMajorEvent(journal.majorEvent || "未選択");
 
-    setAmount(journal.amount);
+    setAmount(journal.amount ?? "");
+    setCurrency(journal.currency);
+    setShareCount(journal.shareCount);
+    setAcquisitionPrice(journal.acquisitionPrice);
     setProfit(journal.profit);
     setDecision(journal.decision);
     setReason(journal.reason);
@@ -463,19 +480,26 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="block font-medium">
-                投資金額（任意・円）
-              </label>
+              <label className="block font-medium">通貨</label>
+              <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
+                <option value="USD">USD</option>
+                <option value="JPY">JPY</option>
+              </select>
+            </div>
 
-              <input
-                type="number"
-                inputMode="numeric"
-                step="1"
-                className="mt-1 w-full rounded border p-2"
-                placeholder="100000"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
+            <div>
+              <label className="block font-medium">株数</label>
+              <input type="number" inputMode="decimal" min="0" step="any" placeholder="15" value={shareCount} onChange={(e) => setShareCount(e.target.value)} />
+            </div>
+
+            <div>
+              <label className="block font-medium">取得単価</label>
+              <input type="number" inputMode="decimal" min="0" step="0.01" placeholder={currency === "USD" ? "70.20" : "1500"} value={acquisitionPrice} onChange={(e) => setAcquisitionPrice(e.target.value)} />
+            </div>
+
+            <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-3">
+              <p className="text-xs font-medium text-slate-400">投資額（株数 × 取得単価）</p>
+              <p className="mt-1 text-xl font-semibold text-blue-200">{formatCurrency(calculateInvestment(shareCount, acquisitionPrice), currency) ?? "—"}</p>
             </div>
 
             <div>
@@ -814,8 +838,16 @@ export default function Home() {
                     </p>
 
                     <p>
-                      投資金額：
-                      {formatYen(journal.amount) ?? "未入力"}
+                      株数：{journal.shareCount ? `${journal.shareCount}株` : "未入力"}
+                    </p>
+
+                    <p>
+                      取得単価：{formatCurrency(journal.acquisitionPrice, journal.currency) ?? "未入力"}
+                    </p>
+
+                    <p>
+                      投資額：
+                      {formatCurrency(calculateInvestment(journal.shareCount, journal.acquisitionPrice), journal.currency) ?? (journal.amount ? formatYen(journal.amount) : "未入力")}
                     </p>
 
                     <p>

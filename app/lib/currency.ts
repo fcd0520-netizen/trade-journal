@@ -20,6 +20,31 @@ export const formatYen = (value: unknown): string | null => {
   return `${parsed < 0 ? "-" : ""}${formatNumber(parsed)}円`;
 };
 
+export const formatCurrency = (
+  value: unknown,
+  currency: "USD" | "JPY"
+): string | null => {
+  const parsed = parseMoney(value);
+  if (parsed === null) return null;
+
+  return new Intl.NumberFormat(currency === "USD" ? "en-US" : "ja-JP", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(parsed);
+};
+
+export const calculateInvestment = (
+  shareCount: unknown,
+  acquisitionPrice: unknown
+): number | null => {
+  const shares = parseMoney(shareCount);
+  const price = parseMoney(acquisitionPrice);
+  if (shares === null || price === null) return null;
+  return shares * price;
+};
+
 export const formatProfitYen = (value: unknown): string | null => {
   const parsed = parseMoney(value);
   if (parsed === null) return null;

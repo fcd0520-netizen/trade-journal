@@ -1,4 +1,4 @@
-import { formatProfitYen, formatYen, parseMoney } from "../lib/currency";
+import { calculateInvestment, formatCurrency, formatProfitYen, formatYen, parseMoney } from "../lib/currency";
 import type { ActiveJournal } from "../types/journal";
 
 type TradeDetailProps = {
@@ -104,7 +104,9 @@ export default function TradeDetail({ journal, onBack, onEdit }: TradeDetailProp
             value={formatProfitYen(journal.profit) ?? "未入力"}
             valueClassName={`${profitColor} text-lg font-semibold`}
           />
-          <DetailItem label="投資金額（任意）" value={formatYen(journal.amount) ?? "未入力"} />
+          <DetailItem label="株数" value={journal.shareCount ? `${journal.shareCount}株` : "未入力"} />
+          <DetailItem label="取得単価" value={formatCurrency(journal.acquisitionPrice, journal.currency) ?? "未入力"} />
+          <DetailItem label="投資額" value={formatCurrency(calculateInvestment(journal.shareCount, journal.acquisitionPrice), journal.currency) ?? (journal.amount ? formatYen(journal.amount) : null) ?? "未入力"} />
         </DetailSection>
 
         <DetailSection title="相場環境">

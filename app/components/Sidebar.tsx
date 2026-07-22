@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 const menuItems = [
   { id: "dashboard", label: "ダッシュボード", icon: "dashboard" },
@@ -82,6 +83,9 @@ export default function Sidebar() {
 
   const navigation = (
     <nav aria-label="ページ内メニュー" className="mt-8 space-y-1.5">
+      <Link href="/paper-trade" className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium text-slate-400 transition hover:bg-slate-800/70 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/70">
+        <MenuIcon name="list" />Paper Trade
+      </Link>
       {menuItems.map((item) => {
         const isActive = activeSection === item.id;
         return (
