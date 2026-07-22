@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const menuItems = [
   { id: "dashboard", label: "ダッシュボード", icon: "dashboard" },
@@ -31,6 +32,7 @@ function MenuIcon({ name }: { name: IconName }) {
 }
 
 export default function Sidebar() {
+  const pathname = usePathname();
   const [activeSection, setActiveSection] = useState<SectionId>("dashboard");
   const [isOpen, setIsOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -96,7 +98,15 @@ export default function Sidebar() {
         <MenuIcon name="dashboard" />
         ダッシュボード
       </button>
-      <Link href="/watchlist" className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium text-slate-400 transition hover:bg-slate-800/70 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/70">
+      <Link
+        href="/watchlist"
+        aria-current={pathname === "/watchlist" ? "page" : undefined}
+        className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/70 ${
+          pathname === "/watchlist"
+            ? "bg-blue-500/15 text-blue-300 ring-1 ring-inset ring-blue-400/20"
+            : "text-slate-400 hover:bg-slate-800/70 hover:text-slate-100"
+        }`}
+      >
         <MenuIcon name="list" />Watchlist
       </Link>
       <Link href="/paper-trade" className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium text-slate-400 transition hover:bg-slate-800/70 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/70">

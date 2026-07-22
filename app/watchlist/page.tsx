@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
 import type {
   WatchlistCurrency,
   WatchlistItem,
@@ -119,15 +119,13 @@ export default function WatchlistPage() {
   };
 
   return (
-    <main className="ios-app min-h-screen px-4 py-10 sm:px-6">
-      <div className="mx-auto max-w-7xl space-y-7">
+    <main className="ios-app min-h-screen bg-[#060b16] px-4 py-20 sm:px-6 sm:py-12 lg:pl-[calc(16rem+1.5rem)]">
+      <Sidebar />
+      <div className="mx-auto max-w-6xl space-y-7 sm:space-y-9">
         <header className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
-          <Link href="/" className="relative z-10 text-sm font-semibold text-blue-200 hover:text-white">
-            ← Trade Journalへ戻る
-          </Link>
-          <p className="relative z-10 mt-6 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">Candidates</p>
+          <p className="relative z-10 mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">WATCHLIST</p>
           <h1 className="relative z-10 mt-1 text-3xl font-semibold text-white sm:text-4xl">Watchlist</h1>
-          <p className="relative z-10 mt-3 text-sm text-slate-300">気になる銘柄と購入候補価格を整理</p>
+          <p className="relative z-10 mt-3 text-sm text-slate-300">投資候補を管理し、<br />購入タイミングを記録する</p>
         </header>
 
         <section id="watchlist-form" className="ios-card scroll-mt-6 rounded-2xl p-5 sm:p-7">
