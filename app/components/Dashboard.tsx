@@ -1,9 +1,40 @@
+import { useEffect, useState } from "react";
 import { formatProfitYen, parseMoney } from "../lib/currency";
 import type { ActiveJournal } from "../types/journal";
 
 type DashboardProps = {
   journals: ActiveJournal[];
   onEdit: (journal: ActiveJournal) => void;
+};
+
+type SummaryCounts = {
+  journals: number;
+  watchlist: number;
+  paperTrades: number;
+};
+
+const SUMMARY_STORAGE_KEYS = {
+  journals: "trade-journals",
+  watchlist: "trade-journal-watchlist",
+  paperTrades: "paper-trades",
+} as const;
+
+const emptySummaryCounts: SummaryCounts = {
+  journals: 0,
+  watchlist: 0,
+  paperTrades: 0,
+};
+
+const getStoredItemCount = (key: string) => {
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return 0;
+
+    const parsed: unknown = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed.length : 0;
+  } catch {
+    return 0;
+  }
 };
 
 const toPercentage = (numerator: number, denominator: number) =>
@@ -27,6 +58,49 @@ const getCompletedResults = (journals: ActiveJournal[]) =>
   );
 
 export default function Dashboard({ journals, onEdit }: DashboardProps) {
+  const [summaryCounts, setSummaryCounts] =
+    useState<SummaryCounts>(emptySummaryCounts);
+
+  useEffect(() => {
+    let frame: number | null = null;
+
+    const refreshSummaryCounts = () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+
+      frame = window.requestAnimationFrame(() => {
+        setSummaryCounts({
+          journals: getStoredItemCount(SUMMARY_STORAGE_KEYS.journals),
+          watchlist: getStoredItemCount(SUMMARY_STORAGE_KEYS.watchlist),
+          paperTrades: getStoredItemCount(SUMMARY_STORAGE_KEYS.paperTrades),
+        });
+        frame = null;
+      });
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        event.key === null ||
+        Object.values(SUMMARY_STORAGE_KEYS).includes(
+          event.key as (typeof SUMMARY_STORAGE_KEYS)[keyof typeof SUMMARY_STORAGE_KEYS]
+        )
+      ) {
+        refreshSummaryCounts();
+      }
+    };
+
+    refreshSummaryCounts();
+    window.addEventListener("focus", refreshSummaryCounts);
+    window.addEventListener("pageshow", refreshSummaryCounts);
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      window.removeEventListener("focus", refreshSummaryCounts);
+      window.removeEventListener("pageshow", refreshSummaryCounts);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, []);
+
   const completedResults = getCompletedResults(journals);
   const wins = completedResults.filter((journal) => journal.result === "勝ち").length;
   const rulesFollowed = journals.filter((journal) => journal.ruleFollowed).length;
@@ -69,6 +143,11 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
     { label: "ルール遵守率", value: `${toPercentage(rulesFollowed, journals.length)}%`, icon: "✓", valueClass: "text-white" },
     { label: "今月の記録数", value: `${monthlyJournals.length}件`, icon: "◫", valueClass: "text-white" },
     { label: "今月の勝率", value: `${toPercentage(monthlyWins, monthlyCompletedResults.length)}%`, icon: "◎", valueClass: "text-white" },
+  ];
+  const summaryCards = [
+    { label: "Journal件数", value: summaryCounts.journals, icon: "▦" },
+    { label: "Watchlist件数", value: summaryCounts.watchlist, icon: "☆" },
+    { label: "Paper Trade件数", value: summaryCounts.paperTrades, icon: "◫" },
   ];
 
   return (
@@ -113,6 +192,18 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
           </div>
         </dl>
       </section>
+
+      <div className="ios-dashboard grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        {summaryCards.map((card) => (
+          <div key={card.label} className="ios-stat flex min-h-28 flex-col justify-between rounded-2xl p-4 sm:min-h-32 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 sm:text-xs">{card.label}</p>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-blue-400/15 bg-blue-500/10 text-lg font-semibold text-blue-400" aria-hidden="true">{card.icon}</span>
+            </div>
+            <p className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{card.value}件</p>
+          </div>
+        ))}
+      </div>
 
       <div className="ios-dashboard grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {cards.map((card) => (
