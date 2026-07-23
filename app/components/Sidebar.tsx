@@ -5,11 +5,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const menuItems = [
-  { id: "dashboard", label: "ダッシュボード", icon: "dashboard", href: "/" },
-  { id: "analytics", label: "Analytics", icon: "analytics", href: "/#analytics" },
+  { id: "dashboard", label: "Dashboard", icon: "dashboard", href: "/" },
+  { id: "watchlist", label: "Watchlist", icon: "list", href: "/watchlist" },
+  { id: "paper-trade", label: "Paper Trade", icon: "list", href: "/paper-trade" },
   { id: "new-entry", label: "新規記録", icon: "plus", href: "/#new-entry" },
   { id: "journal-list", label: "記録一覧", icon: "list", href: "/#journal-list" },
-  { id: "calendar", label: "カレンダー", icon: "calendar", href: "/#calendar" },
+  { id: "analytics", label: "Analytics", icon: "analytics", href: "/#analytics" },
+  { id: "calendar", label: "Calendar", icon: "calendar", href: "/#calendar" },
 ] as const;
 
 type SectionId = (typeof menuItems)[number]["id"];
@@ -80,13 +82,16 @@ export default function Sidebar() {
   const navigation = (
     <nav aria-label="メインメニュー" className="mt-8 space-y-1.5">
       {menuItems.map((item) => {
-        const isActive = pathname === "/" && activeSection === item.id;
+        const isRootSection = item.href === "/" || item.href.startsWith("/#");
+        const isActive = isRootSection
+          ? pathname === "/" && activeSection === item.id
+          : pathname === item.href;
         return (
           <Link
             key={item.id}
             href={item.href}
             onClick={() => setIsOpen(false)}
-            aria-current={isActive ? (item.id === "dashboard" ? "page" : "location") : undefined}
+            aria-current={isActive ? (isRootSection && item.id !== "dashboard" ? "location" : "page") : undefined}
             className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/70 ${
               isActive
                 ? "bg-blue-500/15 text-blue-300 ring-1 ring-inset ring-blue-400/20"
@@ -98,30 +103,6 @@ export default function Sidebar() {
           </Link>
         );
       })}
-      <Link
-        href="/watchlist"
-        onClick={() => setIsOpen(false)}
-        aria-current={pathname === "/watchlist" ? "page" : undefined}
-        className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/70 ${
-          pathname === "/watchlist"
-            ? "bg-blue-500/15 text-blue-300 ring-1 ring-inset ring-blue-400/20"
-            : "text-slate-400 hover:bg-slate-800/70 hover:text-slate-100"
-        }`}
-      >
-        <MenuIcon name="list" />Watchlist
-      </Link>
-      <Link
-        href="/paper-trade"
-        onClick={() => setIsOpen(false)}
-        aria-current={pathname === "/paper-trade" ? "page" : undefined}
-        className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 text-left text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-blue-500/70 ${
-          pathname === "/paper-trade"
-            ? "bg-blue-500/15 text-blue-300 ring-1 ring-inset ring-blue-400/20"
-            : "text-slate-400 hover:bg-slate-800/70 hover:text-slate-100"
-        }`}
-      >
-        <MenuIcon name="list" />Paper Trade
-      </Link>
     </nav>
   );
 

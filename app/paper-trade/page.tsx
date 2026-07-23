@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
 import type { PaperTrade } from "../types/paper-trade";
 
 const STORAGE_KEY = "paper-trades";
@@ -83,10 +84,11 @@ export default function PaperTradePage() {
   };
 
   return (
-    <main className="ios-app min-h-screen px-4 py-10 sm:px-6">
+    <main className="ios-app min-h-screen px-4 py-10 sm:px-6 lg:pl-[calc(16rem+1.5rem)]">
+      <Sidebar />
       <div className="mx-auto max-w-5xl space-y-7">
         <header className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
-          <Link href="/" className="relative z-10 text-sm font-semibold text-blue-200 hover:text-white">← Trade Journalへ戻る</Link>
+          <Link href="/" className="relative z-10 text-sm font-semibold text-blue-200 hover:text-white">← Dashboardへ戻る</Link>
           <p className="relative z-10 mt-6 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">Simulation</p>
           <h1 className="relative z-10 mt-1 text-3xl font-semibold text-white sm:text-4xl">Paper Trade</h1>
           <p className="relative z-10 mt-3 text-sm text-slate-300">実取引とは独立したシミュレーション記録</p>
