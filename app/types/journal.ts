@@ -3,6 +3,7 @@ export type Currency = "USD" | "JPY";
 
 export type Journal = {
   id: number;
+  createdAt: string;
   category: string;
   target: string;
   marketEnvironment: string;

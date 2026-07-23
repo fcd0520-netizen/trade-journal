@@ -13,6 +13,16 @@ type SummaryCounts = {
   paperTrades: number;
 };
 
+type ActivityType = "journal" | "watchlist" | "paperTrade";
+
+type RecentActivity = {
+  id: string;
+  type: ActivityType;
+  ticker: string;
+  createdAt: string;
+  timestamp: number;
+};
+
 const SUMMARY_STORAGE_KEYS = {
   journals: "trade-journals",
   watchlist: "trade-journal-watchlist",
@@ -37,6 +47,100 @@ const getStoredItemCount = (key: string) => {
   }
 };
 
+const getStoredItems = (key: string): Record<string, unknown>[] => {
+  try {
+    const saved = localStorage.getItem(key);
+    if (!saved) return [];
+
+    const parsed: unknown = JSON.parse(saved);
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (item): item is Record<string, unknown> =>
+            typeof item === "object" && item !== null
+        )
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const getActivityDate = (item: Record<string, unknown>) => {
+  if (typeof item.createdAt === "string") {
+    const timestamp = Date.parse(item.createdAt);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+
+  if (typeof item.id === "number" && Number.isFinite(item.id)) return item.id;
+  if (typeof item.tradeDate === "string") {
+    const timestamp = Date.parse(item.tradeDate);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  if (typeof item.startDate === "string") {
+    const timestamp = Date.parse(item.startDate);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return 0;
+};
+
+const getRecentActivities = (): RecentActivity[] => {
+  const sources: { key: string; type: ActivityType; tickerKey: string }[] = [
+    { key: SUMMARY_STORAGE_KEYS.journals, type: "journal", tickerKey: "target" },
+    { key: SUMMARY_STORAGE_KEYS.watchlist, type: "watchlist", tickerKey: "ticker" },
+    { key: SUMMARY_STORAGE_KEYS.paperTrades, type: "paperTrade", tickerKey: "ticker" },
+  ];
+
+  return sources
+    .flatMap(({ key, type, tickerKey }) =>
+      getStoredItems(key).map((item, index) => {
+        const timestamp = getActivityDate(item);
+        return {
+          id: `${type}-${String(item.id ?? index)}`,
+          type,
+          ticker:
+            typeof item[tickerKey] === "string" && item[tickerKey].trim()
+              ? item[tickerKey].trim()
+              : "名称未入力",
+          createdAt: timestamp ? new Date(timestamp).toISOString() : "",
+          timestamp,
+        };
+      })
+    )
+    .sort((a, b) => b.timestamp - a.timestamp)
+    .slice(0, 5);
+};
+
+const activityMeta: Record<
+  ActivityType,
+  { label: string; icon: string; iconClass: string }
+> = {
+  journal: {
+    label: "Journal",
+    icon: "▦",
+    iconClass: "border-blue-400/20 bg-blue-500/10 text-blue-300",
+  },
+  watchlist: {
+    label: "Watchlist",
+    icon: "☆",
+    iconClass: "border-amber-400/20 bg-amber-500/10 text-amber-300",
+  },
+  paperTrade: {
+    label: "Paper Trade",
+    icon: "◫",
+    iconClass: "border-violet-400/20 bg-violet-500/10 text-violet-300",
+  },
+};
+
+const formatActivityDate = (date: string) =>
+  date
+    ? new Intl.DateTimeFormat("ja-JP", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(date))
+    : "登録日不明";
+
 const toPercentage = (numerator: number, denominator: number) =>
   denominator === 0 ? 0 : Math.round((numerator / denominator) * 100);
 
@@ -60,6 +164,7 @@ const getCompletedResults = (journals: ActiveJournal[]) =>
 export default function Dashboard({ journals, onEdit }: DashboardProps) {
   const [summaryCounts, setSummaryCounts] =
     useState<SummaryCounts>(emptySummaryCounts);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
   useEffect(() => {
     let frame: number | null = null;
@@ -73,6 +178,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
           watchlist: getStoredItemCount(SUMMARY_STORAGE_KEYS.watchlist),
           paperTrades: getStoredItemCount(SUMMARY_STORAGE_KEYS.paperTrades),
         });
+        setRecentActivities(getRecentActivities());
         frame = null;
       });
     };
@@ -191,6 +297,49 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
             </dd>
           </div>
         </dl>
+      </section>
+
+      <section aria-labelledby="recent-activity-title" className="ios-card rounded-2xl p-5 sm:p-6">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">Recent Activity</p>
+            <h3 id="recent-activity-title" className="mt-1 text-lg font-semibold text-white">最近の活動</h3>
+          </div>
+          <p className="text-xs text-slate-500">最新5件</p>
+        </div>
+
+        {recentActivities.length === 0 ? (
+          <p className="mt-5 rounded-xl border border-dashed border-slate-700 p-6 text-center text-sm text-slate-500">
+            まだ活動がありません。
+          </p>
+        ) : (
+          <ul className="mt-5 overflow-hidden rounded-xl border border-slate-800">
+            {recentActivities.map((activity) => {
+              const meta = activityMeta[activity.type];
+              return (
+                <li
+                  key={activity.id}
+                  className="flex min-h-16 items-center gap-3 border-b border-slate-800 px-3.5 py-3 last:border-b-0 sm:px-4"
+                >
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-lg font-semibold ${meta.iconClass}`}
+                    aria-hidden="true"
+                  >
+                    {meta.icon}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-slate-100">
+                      {activity.ticker} を{meta.label}へ追加
+                    </span>
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      登録日 {formatActivityDate(activity.createdAt)}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
 
       <div className="ios-dashboard grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">

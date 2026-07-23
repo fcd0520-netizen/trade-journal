@@ -4,6 +4,7 @@ export type WatchlistStatus = "監視中" | "✅ 購入済" | "❌ 見送り";
 
 export type WatchlistItem = {
   id: number;
+  createdAt: string;
   ticker: string;
   companyName: string;
   currency: WatchlistCurrency;

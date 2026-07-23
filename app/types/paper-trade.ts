@@ -1,5 +1,6 @@
 export type PaperTrade = {
   id: number;
+  createdAt: string;
   ticker: string;
   companyName: string;
   side: "買い" | "売り";

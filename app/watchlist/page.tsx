@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Sidebar from "../components/Sidebar";
 import type {
   WatchlistCurrency,
@@ -10,7 +11,7 @@ import type {
 
 const STORAGE_KEY = "trade-journal-watchlist";
 
-const emptyForm = (): Omit<WatchlistItem, "id"> => ({
+const emptyForm = (): Omit<WatchlistItem, "id" | "createdAt"> => ({
   ticker: "",
   companyName: "",
   currency: "USD",
@@ -70,9 +71,9 @@ export default function WatchlistPage() {
     }
   }, [items, loaded]);
 
-  const update = <K extends keyof Omit<WatchlistItem, "id">>(
+  const update = <K extends keyof Omit<WatchlistItem, "id" | "createdAt">>(
     key: K,
-    value: Omit<WatchlistItem, "id">[K],
+    value: Omit<WatchlistItem, "id" | "createdAt">[K],
   ) => setForm((current) => ({ ...current, [key]: value }));
 
   const reset = () => {
@@ -89,6 +90,9 @@ export default function WatchlistPage() {
     const item: WatchlistItem = {
       ...form,
       id: editingId ?? Date.now(),
+      createdAt:
+        items.find((entry) => entry.id === editingId)?.createdAt ??
+        new Date().toISOString(),
       ticker: form.ticker.trim().toUpperCase(),
       companyName: form.companyName.trim(),
       reason: form.reason.trim(),
@@ -104,7 +108,8 @@ export default function WatchlistPage() {
   };
 
   const edit = (item: WatchlistItem) => {
-    const { id, ...values } = item;
+    const { id, createdAt: _createdAt, ...values } = item;
+    void _createdAt;
     setForm(values);
     setEditingId(id);
     setMessage("編集中です。");
@@ -123,7 +128,13 @@ export default function WatchlistPage() {
       <Sidebar />
       <div className="mx-auto max-w-6xl space-y-7 sm:space-y-9">
         <header className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
-          <p className="relative z-10 mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">WATCHLIST</p>
+          <Link
+            href="/"
+            className="relative z-10 inline-flex min-h-11 items-center text-sm font-semibold text-blue-200 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/70"
+          >
+            ← Dashboardへ戻る
+          </Link>
+          <p className="relative z-10 mb-2 mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">WATCHLIST</p>
           <h1 className="relative z-10 mt-1 text-3xl font-semibold text-white sm:text-4xl">Watchlist</h1>
           <p className="relative z-10 mt-3 text-sm text-slate-300">投資候補を管理し、<br />購入タイミングを記録する</p>
         </header>

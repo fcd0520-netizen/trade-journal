@@ -92,6 +92,9 @@ export default function Home() {
 
         const restored: Journal[] = parsed.map((journal) => ({
           id: journal.id ?? Date.now(),
+          createdAt:
+            journal.createdAt ??
+            (journal.id ? new Date(journal.id).toISOString() : new Date().toISOString()),
           category: journal.category ?? "株式",
           target: journal.target ?? "",
 
@@ -192,6 +195,9 @@ export default function Home() {
 
     const journalData: Journal = {
       id: editingId ?? Date.now(),
+      createdAt:
+        journals.find((journal) => journal.id === editingId)?.createdAt ??
+        new Date().toISOString(),
       category,
       target: target.trim(),
 

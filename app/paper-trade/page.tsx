@@ -6,7 +6,7 @@ import type { PaperTrade } from "../types/paper-trade";
 
 const STORAGE_KEY = "paper-trades";
 
-const emptyForm = (): Omit<PaperTrade, "id"> => ({
+const emptyForm = (): Omit<PaperTrade, "id" | "createdAt"> => ({
   ticker: "",
   companyName: "",
   side: "買い",
@@ -39,7 +39,7 @@ export default function PaperTradePage() {
     if (loaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
   }, [trades, loaded]);
 
-  const update = <K extends keyof Omit<PaperTrade, "id">>(key: K, value: Omit<PaperTrade, "id">[K]) =>
+  const update = <K extends keyof Omit<PaperTrade, "id" | "createdAt">>(key: K, value: Omit<PaperTrade, "id" | "createdAt">[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
 
   const reset = () => {
@@ -52,14 +52,23 @@ export default function PaperTradePage() {
       setMessage("ティッカーを入力してください。");
       return;
     }
-    const trade: PaperTrade = { ...form, ticker: form.ticker.trim().toUpperCase(), companyName: form.companyName.trim(), id: editingId ?? Date.now() };
+    const trade: PaperTrade = {
+      ...form,
+      ticker: form.ticker.trim().toUpperCase(),
+      companyName: form.companyName.trim(),
+      id: editingId ?? Date.now(),
+      createdAt:
+        trades.find((item) => item.id === editingId)?.createdAt ??
+        new Date().toISOString(),
+    };
     setTrades((current) => editingId === null ? [trade, ...current] : current.map((item) => item.id === editingId ? trade : item));
     setMessage(editingId === null ? "Paper Tradeを保存しました。" : "Paper Tradeを更新しました。");
     reset();
   };
 
   const edit = (trade: PaperTrade) => {
-    const { id, ...values } = trade;
+    const { id, createdAt: _createdAt, ...values } = trade;
+    void _createdAt;
     setForm(values);
     setEditingId(id);
     setMessage("編集中です。");
