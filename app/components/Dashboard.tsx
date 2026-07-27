@@ -25,6 +25,17 @@ type RecentActivity = {
   timestamp: number;
 };
 
+type SearchCategory = "Journal" | "Watchlist" | "Paper Trade";
+
+type GlobalSearchItem = {
+  id: string;
+  category: SearchCategory;
+  ticker: string;
+  company: string;
+  reason: string;
+  tradeDate: string;
+};
+
 const SUMMARY_STORAGE_KEYS = {
   journals: "trade-journals",
   watchlist: "trade-journal-watchlist",
@@ -64,6 +75,52 @@ const getStoredItems = (key: string): Record<string, unknown>[] => {
   } catch {
     return [];
   }
+};
+
+const getStringValue = (
+  item: Record<string, unknown>,
+  keys: string[],
+) => {
+  for (const key of keys) {
+    const value = item[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+};
+
+const getGlobalSearchItems = (): GlobalSearchItem[] => {
+  const sources: {
+    key: string;
+    category: SearchCategory;
+    tickerKeys: string[];
+  }[] = [
+    {
+      key: SUMMARY_STORAGE_KEYS.journals,
+      category: "Journal",
+      tickerKeys: ["ticker", "target"],
+    },
+    {
+      key: SUMMARY_STORAGE_KEYS.watchlist,
+      category: "Watchlist",
+      tickerKeys: ["ticker"],
+    },
+    {
+      key: SUMMARY_STORAGE_KEYS.paperTrades,
+      category: "Paper Trade",
+      tickerKeys: ["ticker"],
+    },
+  ];
+
+  return sources.flatMap(({ key, category, tickerKeys }) =>
+    getStoredItems(key).map((item, index) => ({
+      id: `${category}-${String(item.id ?? index)}`,
+      category,
+      ticker: getStringValue(item, tickerKeys),
+      company: getStringValue(item, ["company", "companyName"]),
+      reason: getStringValue(item, ["reason"]),
+      tradeDate: getStringValue(item, ["tradeDate"]),
+    })),
+  );
 };
 
 const getActivityDate = (item: Record<string, unknown>) => {
@@ -197,6 +254,8 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
     useState<SummaryCounts>(emptySummaryCounts);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [watchingItems, setWatchingItems] = useState<WatchlistItem[]>([]);
+  const [globalSearchItems, setGlobalSearchItems] = useState<GlobalSearchItem[]>([]);
+  const [globalSearch, setGlobalSearch] = useState("");
 
   useEffect(() => {
     let frame: number | null = null;
@@ -212,6 +271,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
         });
         setRecentActivities(getRecentActivities());
         setWatchingItems(getWatchingItems());
+        setGlobalSearchItems(getGlobalSearchItems());
         frame = null;
       });
     };
@@ -274,6 +334,14 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
     )
     .slice(0, 3);
   const totalProfitColor = profitColor(totalProfit);
+  const normalizedGlobalSearch = globalSearch.trim().toLocaleLowerCase();
+  const globalSearchResults = normalizedGlobalSearch
+    ? globalSearchItems.filter(
+        (item) =>
+          item.ticker.toLocaleLowerCase().includes(normalizedGlobalSearch) ||
+          item.company.toLocaleLowerCase().includes(normalizedGlobalSearch),
+      )
+    : [];
 
   const cards = [
     { label: "総記録数", value: `${journals.length}件`, icon: "▦", valueClass: "text-white" },
@@ -305,6 +373,86 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
           クイック追加
         </Link>
       </div>
+
+      <section aria-labelledby="global-search-title" className="ios-card rounded-2xl p-4 sm:p-5">
+        <label
+          id="global-search-title"
+          htmlFor="global-search"
+          className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
+        >
+          Global Search
+        </label>
+        <div className="relative mt-3">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-slate-500"
+          >
+            ⌕
+          </span>
+          <input
+            id="global-search"
+            type="search"
+            autoComplete="off"
+            placeholder="Search..."
+            value={globalSearch}
+            onChange={(event) => {
+              setGlobalSearchItems(getGlobalSearchItems());
+              setGlobalSearch(event.target.value);
+            }}
+            className="min-h-12 w-full rounded-2xl border border-slate-700 bg-slate-950/70 py-3 pl-11 pr-4 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+          />
+        </div>
+
+        {normalizedGlobalSearch && (
+          <div className="mt-4" aria-live="polite">
+            {globalSearchResults.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-slate-700 p-6 text-center text-sm text-slate-500">
+                検索結果はありません
+              </p>
+            ) : (
+              <>
+                <p className="mb-3 text-xs text-slate-500">
+                  {globalSearchResults.length}件の検索結果
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {globalSearchResults.map((item) => (
+                    <article
+                      key={item.id}
+                      className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"
+                    >
+                      <span className="inline-flex rounded-full border border-blue-400/20 bg-blue-500/10 px-2.5 py-1 text-[11px] font-semibold text-blue-300">
+                        {item.category}
+                      </span>
+                      <h3 className="mt-3 text-lg font-semibold tracking-wide text-white">
+                        {item.ticker || "ティッカー未入力"}
+                      </h3>
+                      <p className="mt-0.5 text-sm text-slate-400">
+                        {item.company || "企業名未入力"}
+                      </p>
+                      {(item.reason || item.tradeDate) && (
+                        <div className="mt-3 border-t border-slate-800 pt-3 text-xs leading-5 text-slate-500">
+                          {item.reason && (
+                            <p className="line-clamp-2">
+                              <span className="text-slate-400">理由：</span>
+                              {item.reason}
+                            </p>
+                          )}
+                          {item.tradeDate && (
+                            <p className={item.reason ? "mt-1" : ""}>
+                              <span className="text-slate-400">取引日：</span>
+                              {item.tradeDate}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </section>
 
       <section aria-labelledby="today-title" className="ios-card overflow-hidden rounded-2xl border-blue-400/20 bg-gradient-to-br from-blue-950/70 via-slate-900/95 to-slate-950/95 p-5 sm:p-6">
         <div>
