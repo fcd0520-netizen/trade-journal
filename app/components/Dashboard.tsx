@@ -284,9 +284,9 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
     { label: "今月の勝率", value: `${toPercentage(monthlyWins, monthlyCompletedResults.length)}%`, icon: "◎", valueClass: "text-white" },
   ];
   const summaryCards = [
-    { label: "Journal件数", value: summaryCounts.journals, icon: "▦" },
-    { label: "Watchlist件数", value: summaryCounts.watchlist, icon: "☆" },
-    { label: "Paper Trade件数", value: summaryCounts.paperTrades, icon: "◫" },
+    { label: "Journal件数", value: summaryCounts.journals, icon: "▦", href: "/#journal-list" },
+    { label: "Watchlist件数", value: summaryCounts.watchlist, icon: "☆", href: "/watchlist" },
+    { label: "Paper Trade件数", value: summaryCounts.paperTrades, icon: "◫", href: "/paper-trade" },
   ];
 
   return (
@@ -377,13 +377,18 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
 
       <div className="ios-dashboard grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         {summaryCards.map((card) => (
-          <div key={card.label} className="ios-stat flex min-h-28 flex-col justify-between rounded-2xl p-4 sm:min-h-32 sm:p-5">
+          <Link
+            key={card.label}
+            href={card.href}
+            className="ios-stat flex min-h-28 cursor-pointer flex-col justify-between rounded-2xl p-4 transition duration-200 hover:-translate-y-0.5 hover:border-blue-400/30 hover:bg-slate-800/70 focus:outline-none focus-visible:-translate-y-0.5 focus-visible:border-blue-400/40 focus-visible:ring-2 focus-visible:ring-blue-500/70 sm:min-h-32 sm:p-5"
+            aria-label={`${card.label}：${card.value}件。ページへ移動`}
+          >
             <div className="flex items-center justify-between gap-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 sm:text-xs">{card.label}</p>
               <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-blue-400/15 bg-blue-500/10 text-lg font-semibold text-blue-400" aria-hidden="true">{card.icon}</span>
             </div>
             <p className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">{card.value}件</p>
-          </div>
+          </Link>
         ))}
       </div>
 
