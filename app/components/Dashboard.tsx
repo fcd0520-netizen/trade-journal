@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { formatProfitYen, parseMoney } from "../lib/currency";
 import type { ActiveJournal } from "../types/journal";
+import type { WatchlistItem } from "../types/watchlist";
 
 type DashboardProps = {
   journals: ActiveJournal[];
@@ -109,6 +111,35 @@ const getRecentActivities = (): RecentActivity[] => {
     .slice(0, 5);
 };
 
+const getWatchingItems = (): WatchlistItem[] =>
+  getStoredItems(SUMMARY_STORAGE_KEYS.watchlist)
+    .filter(
+      (item): item is Record<string, unknown> & WatchlistItem =>
+        item.status === "監視中" &&
+        typeof item.id === "number" &&
+        typeof item.createdAt === "string" &&
+        typeof item.ticker === "string" &&
+        typeof item.companyName === "string" &&
+        typeof item.reason === "string" &&
+        typeof item.targetPrice === "string" &&
+        (item.currency === "USD" || item.currency === "JPY")
+    )
+    .sort((a, b) => getActivityDate(b) - getActivityDate(a))
+    .slice(0, 3);
+
+const formatWatchlistPrice = (value: string, currency: WatchlistItem["currency"]) => {
+  if (!value) return "未入力";
+
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return value;
+
+  return new Intl.NumberFormat(currency === "USD" ? "en-US" : "ja-JP", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: currency === "JPY" ? 0 : 2,
+  }).format(amount);
+};
+
 const activityMeta: Record<
   ActivityType,
   { label: string; icon: string; iconClass: string }
@@ -165,6 +196,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
   const [summaryCounts, setSummaryCounts] =
     useState<SummaryCounts>(emptySummaryCounts);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [watchingItems, setWatchingItems] = useState<WatchlistItem[]>([]);
 
   useEffect(() => {
     let frame: number | null = null;
@@ -179,6 +211,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
           paperTrades: getStoredItemCount(SUMMARY_STORAGE_KEYS.paperTrades),
         });
         setRecentActivities(getRecentActivities());
+        setWatchingItems(getWatchingItems());
         frame = null;
       });
     };
@@ -353,6 +386,57 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
           </div>
         ))}
       </div>
+
+      <section aria-labelledby="watching-items-title" className="ios-card rounded-2xl p-5 sm:p-6">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-400">Watching</p>
+            <h3 id="watching-items-title" className="mt-1 text-lg font-semibold text-white">監視銘柄</h3>
+          </div>
+          <p className="text-xs text-slate-500">最新3件</p>
+        </div>
+
+        {watchingItems.length === 0 ? (
+          <p className="mt-5 rounded-xl border border-dashed border-slate-700 p-6 text-center text-sm text-slate-500">
+            現在、監視中の銘柄はありません
+          </p>
+        ) : (
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            {watchingItems.map((item) => (
+              <article
+                key={item.id}
+                className="flex min-w-0 flex-col rounded-xl border border-slate-800 bg-slate-950/45 p-4"
+              >
+                <div>
+                  <h4 className="text-lg font-semibold tracking-wide text-white">{item.ticker}</h4>
+                  <p className="mt-0.5 truncate text-sm text-slate-400">
+                    {item.companyName || "銘柄名未入力"}
+                  </p>
+                </div>
+                <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-300">
+                  <span className="font-medium text-slate-500">理由：</span>
+                  {item.reason || "未入力"}
+                </p>
+                <p className="mt-4 border-t border-slate-800 pt-3 text-sm text-slate-400">
+                  目標買値：
+                  <span className="font-semibold text-amber-300">
+                    {formatWatchlistPrice(item.targetPrice, item.currency)}
+                  </span>
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-5 border-t border-slate-800 pt-4">
+          <Link
+            href="/watchlist"
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-blue-300 transition hover:text-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500/70"
+          >
+            Watchlistをすべて見る →
+          </Link>
+        </div>
+      </section>
 
       <div className="ios-dashboard grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {cards.map((card) => (
