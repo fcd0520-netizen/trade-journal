@@ -291,9 +291,19 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
 
   return (
     <section aria-labelledby="dashboard-title" className="space-y-5 sm:space-y-6">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Overview</p>
-        <h2 id="dashboard-title" className="mt-1 text-xl font-semibold text-white sm:text-2xl">Dashboard</h2>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Overview</p>
+          <h2 id="dashboard-title" className="mt-1 text-xl font-semibold text-white sm:text-2xl">Dashboard</h2>
+        </div>
+        <Link
+          href="/#new-entry"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-blue-400/25 bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-950/30 transition hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#060b16] sm:w-auto"
+          aria-label="新しい取引記録を追加"
+        >
+          <span aria-hidden="true" className="text-lg leading-none">＋</span>
+          クイック追加
+        </Link>
       </div>
 
       <section aria-labelledby="today-title" className="ios-card overflow-hidden rounded-2xl border-blue-400/20 bg-gradient-to-br from-blue-950/70 via-slate-900/95 to-slate-950/95 p-5 sm:p-6">
