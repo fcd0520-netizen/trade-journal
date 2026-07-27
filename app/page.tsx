@@ -5,8 +5,10 @@ import Calendar from "react-calendar";
 import type { Value } from "react-calendar/dist/shared/types.js";
 import Analytics from "./components/Analytics";
 import Dashboard from "./components/Dashboard";
+import PaperTradeQuickForm from "./components/PaperTradeQuickForm";
 import Sidebar from "./components/Sidebar";
 import TradeDetail from "./components/TradeDetail";
+import WatchlistQuickForm from "./components/WatchlistQuickForm";
 import { calculateInvestment, formatCurrency, formatYen, normalizeStoredMoney } from "./lib/currency";
 import type { ActiveJournal, Currency, Journal, TradeCategory } from "./types/journal";
 
@@ -19,6 +21,7 @@ type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
 type CategoryFilter = "すべて" | TradeCategory;
 type ResultFilter = "すべて" | "未確定" | "勝ち" | "負け";
 type RuleFilter = "すべて" | "守った" | "守らなかった";
+type EntryTab = "trade" | "watchlist" | "paper";
 
 const STORAGE_KEY = "trade-journals";
 
@@ -51,6 +54,7 @@ const resultBadgeClass = (result: string) => {
 };
 
 export default function Home() {
+  const [entryTab, setEntryTab] = useState<EntryTab>("trade");
   const [category, setCategory] = useState<TradeCategory>("株式");
   const [target, setTarget] = useState("");
 
@@ -357,6 +361,45 @@ export default function Home() {
         <Analytics journals={activeJournals} />
 
         <section id="new-entry" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
+          <div role="tablist" aria-label="追加する記録の種類" className="mb-6 grid grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-slate-950/70 p-1 sm:gap-2">
+            {([
+              ["trade", "取引記録"],
+              ["watchlist", "Watchlist"],
+              ["paper", "Paper Trade"],
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                id={`entry-tab-${id}`}
+                type="button"
+                role="tab"
+                aria-selected={entryTab === id}
+                aria-controls={`entry-panel-${id}`}
+                onClick={() => setEntryTab(id)}
+                className={`min-h-11 rounded-lg px-2 py-2 text-xs font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 sm:px-4 sm:text-sm ${
+                  entryTab === id
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-950/40"
+                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {entryTab === "watchlist" && (
+            <div id="entry-panel-watchlist" role="tabpanel" aria-labelledby="entry-tab-watchlist">
+              <WatchlistQuickForm />
+            </div>
+          )}
+
+          {entryTab === "paper" && (
+            <div id="entry-panel-paper" role="tabpanel" aria-labelledby="entry-tab-paper">
+              <PaperTradeQuickForm />
+            </div>
+          )}
+
+          {entryTab === "trade" && (
+          <div id="entry-panel-trade" role="tabpanel" aria-labelledby="entry-tab-trade">
           <div className="flex items-center justify-between gap-4">
             <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
               {editingId !== null ? "記録を編集" : "新規記録"}
@@ -631,6 +674,8 @@ export default function Home() {
               <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300 sm:col-span-2">{message}</p>
             )}
           </div>
+          </div>
+          )}
         </section>
 
         <section id="calendar" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
