@@ -1,173 +1,246 @@
 import { formatProfitYen, parseMoney } from "../lib/currency";
-import type { ActiveJournal, TradeCategory } from "../types/journal";
+import type { ActiveJournal } from "../types/journal";
 
 type AnalyticsProps = {
   journals: ActiveJournal[];
 };
 
-type Summary = {
-  count: number;
+type EmotionSummary = {
+  emotion: string;
   wins: number;
   losses: number;
-  completed: number;
-  profit: number;
 };
 
 const percentage = (value: number, total: number) =>
   total === 0 ? 0 : Math.round((value / total) * 100);
 
-const summarize = (journals: ActiveJournal[]): Summary => ({
-  count: journals.length,
-  wins: journals.filter((journal) => journal.result === "勝ち").length,
-  losses: journals.filter((journal) => journal.result === "負け").length,
-  completed: journals.filter((journal) =>
-    ["勝ち", "負け", "引き分け"].includes(journal.result)
-  ).length,
-  profit: journals.reduce(
-    (total, journal) => total + (parseMoney(journal.profit) ?? 0),
-    0
-  ),
-});
+const average = (values: number[]) =>
+  values.length === 0
+    ? null
+    : values.reduce((total, value) => total + value, 0) / values.length;
 
-const profitColor = (profit: number) =>
-  profit > 0
-    ? "text-emerald-300"
-    : profit < 0
-      ? "text-rose-300"
-      : "text-slate-200";
+const profitColor = (profit: number | null) =>
+  profit === null || profit === 0
+    ? "text-slate-200"
+    : profit > 0
+      ? "text-emerald-300"
+      : "text-rose-300";
 
-const formatMonth = (month: string) => {
-  if (month === "日付未設定") return month;
-  const [year, monthNumber] = month.split("-");
-  return `${year}年${Number(monthNumber)}月`;
-};
+const displayProfit = (profit: number | null) =>
+  profit === null ? "データなし" : (formatProfitYen(profit) ?? "0円");
 
 export default function Analytics({ journals }: AnalyticsProps) {
-  if (journals.length === 0) {
-    return (
-      <section id="analytics" aria-labelledby="analytics-title" className="scroll-mt-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Decision analytics</p>
-        <h2 id="analytics-title" className="mt-1 text-xl font-semibold text-white sm:text-2xl">Analytics</h2>
-        <div className="ios-card mt-5 rounded-2xl border border-dashed border-slate-700 p-8 text-center sm:p-10">
-          <p className="font-semibold text-slate-300">分析できる記録がまだありません</p>
-        </div>
-      </section>
-    );
-  }
+  const wins = journals.filter((journal) => journal.result === "勝ち");
+  const losses = journals.filter((journal) => journal.result === "負け");
+  const decidedTrades = wins.length + losses.length;
 
-  const overall = summarize(journals);
+  const profitValues = journals
+    .map((journal) => parseMoney(journal.profit))
+    .filter((profit): profit is number => profit !== null);
+  const winningProfits = wins
+    .map((journal) => parseMoney(journal.profit))
+    .filter((profit): profit is number => profit !== null);
+  const losingProfits = losses
+    .map((journal) => parseMoney(journal.profit))
+    .filter((profit): profit is number => profit !== null);
+
+  const totalProfit = profitValues.reduce((total, profit) => total + profit, 0);
+  const averageProfit = average(winningProfits);
+  const averageLoss = average(losingProfits);
+
   const rulesFollowed = journals.filter((journal) => journal.ruleFollowed).length;
-  const emotions = Array.from(
-    journals.reduce((groups, journal) => {
-      const emotion = journal.emotion || "未選択";
-      groups.set(emotion, (groups.get(emotion) ?? 0) + 1);
-      return groups;
-    }, new Map<string, number>())
-  ).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ja"));
+  const rulesNotFollowed = journals.length - rulesFollowed;
 
-  const categories = (["株式", "FX"] as TradeCategory[]).map((category) => ({
-    category,
-    summary: summarize(journals.filter((journal) => journal.category === category)),
-  }));
-
-  const months = Array.from(
+  const emotionResults = Array.from(
     journals.reduce((groups, journal) => {
-      const month = /^\d{4}-\d{2}/.exec(journal.tradeDate)?.[0] ?? "日付未設定";
-      const group = groups.get(month) ?? [];
-      group.push(journal);
-      groups.set(month, group);
+      const emotion = journal.emotion.trim() || "未選択";
+      const current = groups.get(emotion) ?? { emotion, wins: 0, losses: 0 };
+
+      if (journal.result === "勝ち") current.wins += 1;
+      if (journal.result === "負け") current.losses += 1;
+
+      groups.set(emotion, current);
       return groups;
-    }, new Map<string, ActiveJournal[]>())
+    }, new Map<string, EmotionSummary>())
   )
-    .sort(([monthA], [monthB]) => {
-      if (monthA === "日付未設定") return 1;
-      if (monthB === "日付未設定") return -1;
-      return monthB.localeCompare(monthA);
-    })
-    .map(([month, monthJournals]) => ({ month, summary: summarize(monthJournals) }));
-
-  const summaryCards = [
-    { label: "総トレード数", value: `${overall.count}件`, note: "株式・FX", color: "text-white" },
-    { label: "勝率", value: `${percentage(overall.wins, overall.completed)}%`, note: `確定 ${overall.completed}件`, color: "text-white" },
-    { label: "総損益", value: formatProfitYen(overall.profit) ?? "0円", note: "入力済み損益の合計", color: profitColor(overall.profit) },
-    { label: "ルール遵守率", value: `${percentage(rulesFollowed, overall.count)}%`, note: `${rulesFollowed} / ${overall.count}件`, color: "text-white" },
-  ];
+    .map(([, summary]) => summary)
+    .sort(
+      (a, b) =>
+        b.wins + b.losses - (a.wins + a.losses) ||
+        a.emotion.localeCompare(b.emotion, "ja")
+    );
 
   return (
-    <section id="analytics" aria-labelledby="analytics-title" className="scroll-mt-8 space-y-5 sm:space-y-6">
+    <section
+      id="analytics"
+      aria-labelledby="analytics-title"
+      className="scroll-mt-8 space-y-5 sm:space-y-6"
+    >
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Decision analytics</p>
-        <h2 id="analytics-title" className="mt-1 text-xl font-semibold text-white sm:text-2xl">Analytics</h2>
-        <p className="mt-2 text-sm text-slate-500">記録から意思決定の傾向を振り返ります。</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">
+          Decision analytics
+        </p>
+        <h2
+          id="analytics-title"
+          className="mt-1 text-xl font-semibold text-white sm:text-2xl"
+        >
+          Analytics
+        </h2>
+        <p className="mt-2 text-sm text-slate-500">
+          Journalの記録だけを集計し、取引判断の傾向を振り返ります。
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        {summaryCards.map((card) => (
-          <div key={card.label} className="ios-stat min-w-0 rounded-2xl p-4 sm:p-5">
-            <p className="text-[11px] font-semibold tracking-wide text-slate-400 sm:text-xs">{card.label}</p>
-            <p className={`mt-3 break-words text-xl font-semibold tracking-tight sm:text-2xl ${card.color}`}>{card.value}</p>
-            <p className="mt-1 text-[11px] text-slate-600 sm:text-xs">{card.note}</p>
+      {journals.length === 0 ? (
+        <div className="ios-card rounded-2xl border border-dashed border-slate-700 p-8 text-center sm:p-10">
+          <p className="font-semibold text-slate-300">
+            分析できるJournalがまだありません
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            取引記録を保存すると、ここに集計結果が表示されます。
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <section
+              aria-labelledby="win-rate-title"
+              className="ios-card rounded-2xl p-5 sm:p-6"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400">
+                Performance
+              </p>
+              <h3 id="win-rate-title" className="mt-1 text-lg font-semibold text-white">
+                勝率
+              </h3>
+              <p className="mt-5 text-3xl font-semibold tracking-tight text-white">
+                {percentage(wins.length, decidedTrades)}%
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                勝敗が確定した {decidedTrades}件が対象
+              </p>
+              <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-800 pt-5">
+                <div className="rounded-xl bg-emerald-500/10 p-3">
+                  <dt className="text-xs text-slate-400">勝ちトレード数</dt>
+                  <dd className="mt-1 text-xl font-semibold text-emerald-300">
+                    {wins.length}件
+                  </dd>
+                </div>
+                <div className="rounded-xl bg-rose-500/10 p-3">
+                  <dt className="text-xs text-slate-400">負けトレード数</dt>
+                  <dd className="mt-1 text-xl font-semibold text-rose-300">
+                    {losses.length}件
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            <section
+              aria-labelledby="profit-title"
+              className="ios-card rounded-2xl p-5 sm:p-6"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-400">
+                Profit &amp; loss
+              </p>
+              <h3 id="profit-title" className="mt-1 text-lg font-semibold text-white">
+                損益
+              </h3>
+              <dl className="mt-5 space-y-3">
+                {[
+                  { label: "総利益", value: totalProfit },
+                  { label: "平均利益", value: averageProfit },
+                  { label: "平均損失", value: averageLoss },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex min-h-14 items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/45 px-4 py-3"
+                  >
+                    <dt className="text-sm text-slate-400">{item.label}</dt>
+                    <dd
+                      className={`break-words text-right font-semibold ${profitColor(item.value)}`}
+                    >
+                      {displayProfit(item.value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <section
+              aria-labelledby="rule-title"
+              className="ios-card rounded-2xl p-5 sm:p-6"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-400">
+                Discipline
+              </p>
+              <h3 id="rule-title" className="mt-1 text-lg font-semibold text-white">
+                ルール遵守率
+              </h3>
+              <p className="mt-5 text-3xl font-semibold tracking-tight text-white">
+                {percentage(rulesFollowed, journals.length)}%
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                全Journal {journals.length}件が対象
+              </p>
+              <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-800 pt-5">
+                <div className="rounded-xl bg-emerald-500/10 p-3">
+                  <dt className="text-xs text-slate-400">守った</dt>
+                  <dd className="mt-1 text-xl font-semibold text-emerald-300">
+                    {rulesFollowed}件
+                  </dd>
+                </div>
+                <div className="rounded-xl bg-rose-500/10 p-3">
+                  <dt className="text-xs text-slate-400">守らなかった</dt>
+                  <dd className="mt-1 text-xl font-semibold text-rose-300">
+                    {rulesNotFollowed}件
+                  </dd>
+                </div>
+              </dl>
+            </section>
           </div>
-        ))}
-      </div>
 
-      <section aria-labelledby="emotion-title" className="ios-card rounded-2xl p-5 sm:p-6">
-        <h3 id="emotion-title" className="text-lg font-semibold text-white">感情別集計</h3>
-        <div className="mt-5 space-y-4">
-          {emotions.map(([emotion, count]) => {
-            const share = percentage(count, overall.count);
-            return (
-              <div key={emotion}>
-                <div className="flex items-center justify-between gap-4 text-sm">
-                  <span className="font-medium text-slate-200">{emotion}</span>
-                  <span className="shrink-0 text-slate-400">{count}件 <span className="text-slate-600">({share}%)</span></span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-800" aria-hidden="true">
-                  <div className="h-full rounded-full bg-blue-500" style={{ width: `${share}%` }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section aria-labelledby="category-title">
-        <h3 id="category-title" className="text-lg font-semibold text-white">カテゴリ別集計</h3>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {categories.map(({ category, summary }) => (
-            <div key={category} className="ios-card rounded-2xl p-5 sm:p-6">
-              <div className="flex items-center justify-between gap-3">
-                <h4 className="font-semibold text-slate-100">{category}</h4>
-                <span className={`h-2.5 w-2.5 rounded-full ${category === "株式" ? "bg-blue-400" : "bg-violet-400"}`} aria-hidden="true" />
-              </div>
-              <dl className="mt-5 grid grid-cols-3 gap-3">
-                <div><dt className="text-xs text-slate-500">件数</dt><dd className="mt-1 font-semibold text-slate-200">{summary.count}件</dd></div>
-                <div><dt className="text-xs text-slate-500">勝率</dt><dd className="mt-1 font-semibold text-slate-200">{percentage(summary.wins, summary.completed)}%</dd></div>
-                <div><dt className="text-xs text-slate-500">損益</dt><dd className={`mt-1 break-words font-semibold ${profitColor(summary.profit)}`}>{formatProfitYen(summary.profit) ?? "0円"}</dd></div>
-              </dl>
+          <section
+            aria-labelledby="emotion-title"
+            className="ios-card rounded-2xl p-5 sm:p-6"
+          >
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-400">
+                Emotion review
+              </p>
+              <h3 id="emotion-title" className="mt-1 text-lg font-semibold text-white">
+                感情別成績
+              </h3>
+              <p className="mt-1 text-sm text-slate-500">
+                感情ごとの勝ち・負けを比較できます。
+              </p>
             </div>
-          ))}
-        </div>
-      </section>
-
-      <section aria-labelledby="monthly-title" className="ios-card rounded-2xl p-5 sm:p-6">
-        <h3 id="monthly-title" className="text-lg font-semibold text-white">月別集計</h3>
-        <div className="mt-5 space-y-3">
-          {months.map(({ month, summary }) => (
-            <div key={month} className="rounded-xl border border-slate-800 bg-slate-950/45 p-4">
-              <div className="flex items-center justify-between gap-4">
-                <h4 className="font-semibold text-slate-100">{formatMonth(month)}</h4>
-                <p className={`font-semibold ${profitColor(summary.profit)}`}>{formatProfitYen(summary.profit) ?? "0円"}</p>
-              </div>
-              <dl className="mt-4 grid grid-cols-3 gap-3 border-t border-slate-800 pt-4 text-sm">
-                <div><dt className="text-xs text-slate-500">トレード数</dt><dd className="mt-1 font-medium text-slate-200">{summary.count}件</dd></div>
-                <div><dt className="text-xs text-slate-500">勝ち</dt><dd className="mt-1 font-medium text-emerald-300">{summary.wins}件</dd></div>
-                <div><dt className="text-xs text-slate-500">負け</dt><dd className="mt-1 font-medium text-rose-300">{summary.losses}件</dd></div>
-              </dl>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {emotionResults.map((summary) => (
+                <article
+                  key={summary.emotion}
+                  className="rounded-xl border border-slate-800 bg-slate-950/45 p-4"
+                >
+                  <h4 className="font-semibold text-slate-100">{summary.emotion}</h4>
+                  <dl className="mt-4 grid grid-cols-2 gap-3">
+                    <div>
+                      <dt className="text-xs text-slate-500">勝ち</dt>
+                      <dd className="mt-1 text-lg font-semibold text-emerald-300">
+                        {summary.wins}件
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-slate-500">負け</dt>
+                      <dd className="mt-1 text-lg font-semibold text-rose-300">
+                        {summary.losses}件
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
+        </>
+      )}
     </section>
   );
 }
