@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { formatProfitYen, parseMoney } from "../lib/currency";
+import { formatProfitUsd, parseMoney } from "../lib/currency";
 import type { ActiveJournal } from "../types/journal";
 import type { WatchlistItem } from "../types/watchlist";
 
@@ -346,7 +346,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
   const cards = [
     { label: "総記録数", value: `${journals.length}件`, icon: "▦", valueClass: "text-white" },
     { label: "勝率", value: `${toPercentage(wins, completedResults.length)}%`, icon: "↗", valueClass: "text-white" },
-    { label: "損益合計", value: formatProfitYen(totalProfit) ?? "0円", icon: "¥", valueClass: totalProfitColor },
+    { label: "損益合計", value: formatProfitUsd(totalProfit) ?? "$0.00", icon: "$", valueClass: totalProfitColor },
     { label: "ルール遵守率", value: `${toPercentage(rulesFollowed, journals.length)}%`, icon: "✓", valueClass: "text-white" },
     { label: "今月の記録数", value: `${monthlyJournals.length}件`, icon: "◫", valueClass: "text-white" },
     { label: "今月の勝率", value: `${toPercentage(monthlyWins, monthlyCompletedResults.length)}%`, icon: "◎", valueClass: "text-white" },
@@ -476,7 +476,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
             <dd className={`mt-1 break-words text-base font-semibold tracking-tight sm:text-2xl ${monthlyJournals.length === 0 ? "text-slate-500" : profitColor(monthlyProfit)}`}>
               {monthlyJournals.length === 0
                 ? "—"
-                : formatProfitYen(monthlyProfit) ?? "0円"}
+                : formatProfitUsd(monthlyProfit) ?? "$0.00"}
             </dd>
           </div>
           <div className="min-w-0 px-2 text-center sm:px-4">
@@ -640,7 +640,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
                   <span className="mt-0.5 block text-xs text-slate-500">{journal.tradeDate}</span>
                 </span>
                 <span className={`text-sm font-semibold ${parseMoney(journal.profit) === null ? "text-slate-500" : (parseMoney(journal.profit) ?? 0) > 0 ? "text-emerald-300" : (parseMoney(journal.profit) ?? 0) < 0 ? "text-rose-300" : "text-slate-300"}`}>
-                  {formatProfitYen(journal.profit) ?? "未入力"}
+                  {formatProfitUsd(journal.profit) ?? "未入力"}
                 </span>
               </button>
             ))}

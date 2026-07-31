@@ -9,12 +9,14 @@ import PaperTradeQuickForm from "./components/PaperTradeQuickForm";
 import Sidebar from "./components/Sidebar";
 import TradeDetail from "./components/TradeDetail";
 import WatchlistQuickForm from "./components/WatchlistQuickForm";
-import { calculateInvestment, formatCurrency, formatYen, normalizeStoredMoney } from "./lib/currency";
+import { calculateInvestment, formatProfitUsd, formatUsd, normalizeStoredMoney } from "./lib/currency";
 import type { ActiveJournal, Currency, Journal, TradeCategory } from "./types/journal";
 
 type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
   amount?: unknown;
   profit?: unknown;
+  shares?: unknown;
+  remainingShares?: unknown;
   createdAt?: string;
 };
 
@@ -109,6 +111,10 @@ export default function Home() {
           amount: normalizeStoredMoney(journal.amount),
           currency: journal.currency === "JPY" ? "JPY" : "USD",
           shareCount: normalizeStoredMoney(journal.shareCount),
+          status: "holding",
+          remainingShares: normalizeStoredMoney(
+            journal.remainingShares ?? journal.shares ?? journal.shareCount
+          ),
           acquisitionPrice: normalizeStoredMoney(journal.acquisitionPrice),
           profit: normalizeStoredMoney(journal.profit),
           decision: journal.decision ?? "買い",
@@ -197,10 +203,11 @@ export default function Home() {
       return;
     }
 
+    const existingJournal = journals.find((journal) => journal.id === editingId);
     const journalData: Journal = {
       id: editingId ?? Date.now(),
       createdAt:
-        journals.find((journal) => journal.id === editingId)?.createdAt ??
+        existingJournal?.createdAt ??
         new Date().toISOString(),
       category,
       target: target.trim(),
@@ -212,6 +219,8 @@ export default function Home() {
       amount,
       currency,
       shareCount,
+      status: existingJournal?.status ?? "holding",
+      remainingShares: existingJournal?.remainingShares ?? shareCount,
       acquisitionPrice,
       profit,
       decision,
@@ -529,11 +538,8 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="block font-medium">通貨</label>
-              <select value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
-                <option value="USD">USD</option>
-                <option value="JPY">JPY</option>
-              </select>
+              <label className="block font-medium">表示通貨</label>
+              <p className="mt-1 rounded border border-slate-700 bg-slate-950/60 p-2 text-slate-200">USD</p>
             </div>
 
             <div>
@@ -543,23 +549,23 @@ export default function Home() {
 
             <div>
               <label className="block font-medium">取得単価</label>
-              <input type="number" inputMode="decimal" min="0" step="0.01" placeholder={currency === "USD" ? "70.20" : "1500"} value={acquisitionPrice} onChange={(e) => setAcquisitionPrice(e.target.value)} />
+              <input type="number" inputMode="decimal" min="0" step="0.01" placeholder="70.20" value={acquisitionPrice} onChange={(e) => setAcquisitionPrice(e.target.value)} />
             </div>
 
             <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-3">
               <p className="text-xs font-medium text-slate-400">投資額（株数 × 取得単価）</p>
-              <p className="mt-1 text-xl font-semibold text-blue-200">{formatCurrency(calculateInvestment(shareCount, acquisitionPrice), currency) ?? "—"}</p>
+              <p className="mt-1 text-xl font-semibold text-blue-200">{formatUsd(calculateInvestment(shareCount, acquisitionPrice)) ?? "—"}</p>
             </div>
 
             <div>
-              <label className="block font-medium">損益（円）</label>
+              <label className="block font-medium">損益（USD）</label>
 
               <input
                 type="number"
-                inputMode="numeric"
-                step="1"
+                inputMode="decimal"
+                step="0.01"
                 className="mt-1 w-full rounded border p-2"
-                placeholder="利益 10000 / 損失 -3500"
+                placeholder="利益 120.80 / 損失 -35.50"
                 value={profit}
                 onChange={(e) => setProfit(e.target.value)}
               />
@@ -837,6 +843,7 @@ export default function Home() {
                         <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${categoryBadgeClass(journal.category)}`}>{journal.category}</span>
                         <p className="font-semibold text-slate-100">{journal.target}</p>
                         <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${resultBadgeClass(journal.result)}`}>{journal.result || "未確定"}</span>
+                        <span className="rounded-full border border-sky-400/25 bg-sky-500/15 px-2.5 py-1 text-xs font-semibold text-sky-300">保有中</span>
                         <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${journal.ruleFollowed ? "border-emerald-400/25 bg-emerald-500/15 text-emerald-300" : "border-rose-400/25 bg-rose-500/15 text-rose-300"}`}>
                           {journal.ruleFollowed ? "守った" : "守らなかった"}
                         </span>
@@ -893,17 +900,17 @@ export default function Home() {
                     </p>
 
                     <p>
-                      取得単価：{formatCurrency(journal.acquisitionPrice, journal.currency) ?? "未入力"}
+                      取得単価：{formatUsd(journal.acquisitionPrice) ?? "未入力"}
                     </p>
 
                     <p>
                       投資額：
-                      {formatCurrency(calculateInvestment(journal.shareCount, journal.acquisitionPrice), journal.currency) ?? (journal.amount ? formatYen(journal.amount) : "未入力")}
+                      {formatUsd(calculateInvestment(journal.shareCount, journal.acquisitionPrice)) ?? (journal.amount ? formatUsd(journal.amount) : "未入力")}
                     </p>
 
                     <p>
                       損益：
-                      {formatYen(journal.profit) ?? "未入力"}
+                      {formatProfitUsd(journal.profit) ?? "未入力"}
                     </p>
 
                     <p>勝敗：{journal.result || "未確定"}</p>

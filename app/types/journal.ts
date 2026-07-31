@@ -1,5 +1,6 @@
 export type TradeCategory = "株式" | "FX";
 export type Currency = "USD" | "JPY";
+export type JournalStatus = "holding";
 
 export type Journal = {
   id: number;
@@ -13,6 +14,8 @@ export type Journal = {
   amount?: string;
   currency: Currency;
   shareCount: string;
+  status: JournalStatus;
+  remainingShares: string;
   acquisitionPrice: string;
   profit: string;
   decision: string;

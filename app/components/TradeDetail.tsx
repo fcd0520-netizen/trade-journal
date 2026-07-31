@@ -1,4 +1,4 @@
-import { calculateInvestment, formatCurrency, formatProfitYen, formatYen, parseMoney } from "../lib/currency";
+import { calculateInvestment, formatProfitUsd, formatUsd, parseMoney } from "../lib/currency";
 import type { ActiveJournal } from "../types/journal";
 
 type TradeDetailProps = {
@@ -89,6 +89,8 @@ export default function TradeDetail({ journal, onBack, onEdit }: TradeDetailProp
         </DetailSection>
 
         <DetailSection title="判断">
+          <DetailItem label="状態" value="保有中" valueClassName="text-sky-300" />
+          <DetailItem label="残り株数" value={journal.remainingShares ? `${journal.remainingShares}株` : "未入力"} />
           <DetailItem label="感情" value={journal.emotion || "未選択"} />
           <DetailItem
             label="ルール遵守"
@@ -101,12 +103,12 @@ export default function TradeDetail({ journal, onBack, onEdit }: TradeDetailProp
         <DetailSection title="損益">
           <DetailItem
             label="損益"
-            value={formatProfitYen(journal.profit) ?? "未入力"}
+            value={formatProfitUsd(journal.profit) ?? "未入力"}
             valueClassName={`${profitColor} text-lg font-semibold`}
           />
           <DetailItem label="株数" value={journal.shareCount ? `${journal.shareCount}株` : "未入力"} />
-          <DetailItem label="取得単価" value={formatCurrency(journal.acquisitionPrice, journal.currency) ?? "未入力"} />
-          <DetailItem label="投資額" value={formatCurrency(calculateInvestment(journal.shareCount, journal.acquisitionPrice), journal.currency) ?? (journal.amount ? formatYen(journal.amount) : null) ?? "未入力"} />
+          <DetailItem label="取得単価" value={formatUsd(journal.acquisitionPrice) ?? "未入力"} />
+          <DetailItem label="投資額" value={formatUsd(calculateInvestment(journal.shareCount, journal.acquisitionPrice)) ?? (journal.amount ? formatUsd(journal.amount) : null) ?? "未入力"} />
         </DetailSection>
 
         <DetailSection title="相場環境">

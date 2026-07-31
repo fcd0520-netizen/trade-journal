@@ -53,6 +53,18 @@ export const formatProfitYen = (value: unknown): string | null => {
   return `${parsed > 0 ? "+" : "-"}${formatNumber(parsed)}円`;
 };
 
+export const formatUsd = (value: unknown): string | null =>
+  formatCurrency(value, "USD");
+
+export const formatProfitUsd = (value: unknown): string | null => {
+  const parsed = parseMoney(value);
+  if (parsed === null) return null;
+
+  const formatted = formatUsd(Math.abs(parsed));
+  if (formatted === null) return null;
+  return parsed > 0 ? `+${formatted}` : parsed < 0 ? `-${formatted}` : formatted;
+};
+
 export const normalizeStoredMoney = (value: unknown): string => {
   if (typeof value !== "string" && typeof value !== "number") return "";
   return String(value);

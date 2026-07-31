@@ -1,4 +1,4 @@
-import { formatProfitYen, parseMoney } from "../lib/currency";
+import { formatProfitUsd, parseMoney } from "../lib/currency";
 import type { ActiveJournal } from "../types/journal";
 
 type AnalyticsProps = {
@@ -27,7 +27,7 @@ const profitColor = (profit: number | null) =>
       : "text-rose-300";
 
 const displayProfit = (profit: number | null) =>
-  profit === null ? "データなし" : (formatProfitYen(profit) ?? "0円");
+  profit === null ? "データなし" : (formatProfitUsd(profit) ?? "$0.00");
 
 export default function Analytics({ journals }: AnalyticsProps) {
   const wins = journals.filter((journal) => journal.result === "勝ち");
