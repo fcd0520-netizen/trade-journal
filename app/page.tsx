@@ -10,7 +10,7 @@ import Sidebar from "./components/Sidebar";
 import TradeDetail from "./components/TradeDetail";
 import WatchlistQuickForm from "./components/WatchlistQuickForm";
 import { calculateInvestment, formatProfitUsd, formatUsd, normalizeStoredMoney } from "./lib/currency";
-import type { ActiveJournal, Currency, Journal, TradeCategory } from "./types/journal";
+import type { ActiveJournal, Currency, EntryDirection, Journal, JournalStatus, TradeCategory } from "./types/journal";
 
 type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
   amount?: unknown;
@@ -23,6 +23,7 @@ type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
 type CategoryFilter = "すべて" | TradeCategory;
 type ResultFilter = "すべて" | "未確定" | "勝ち" | "負け";
 type RuleFilter = "すべて" | "守った" | "守らなかった";
+type StatusFilter = "すべて" | JournalStatus;
 type EntryTab = "trade" | "watchlist" | "paper";
 
 const STORAGE_KEY = "trade-journals";
@@ -55,6 +56,18 @@ const resultBadgeClass = (result: string) => {
   return "border-slate-500/25 bg-slate-500/15 text-slate-300";
 };
 
+const isJournalStatus = (status: unknown): status is JournalStatus =>
+  status === "holding" || status === "partial" || status === "closed";
+
+const normalizeEntryDirection = (decision: unknown): EntryDirection =>
+  decision === "Sell" || decision === "売り" ? "Sell" : "Buy";
+
+const statusDisplay = {
+  holding: { label: "保有中", className: "border-sky-400/25 bg-sky-500/15 text-sky-300" },
+  partial: { label: "一部決済", className: "border-amber-400/25 bg-amber-500/15 text-amber-300" },
+  closed: { label: "⚪ 決済済", className: "border-slate-500/25 bg-slate-500/15 text-slate-300" },
+} as const;
+
 export default function Home() {
   const [entryTab, setEntryTab] = useState<EntryTab>("trade");
   const [category, setCategory] = useState<TradeCategory>("株式");
@@ -69,7 +82,7 @@ export default function Home() {
   const [shareCount, setShareCount] = useState("");
   const [acquisitionPrice, setAcquisitionPrice] = useState("");
   const [profit, setProfit] = useState("");
-  const [decision, setDecision] = useState("買い");
+  const [decision, setDecision] = useState<EntryDirection>("Buy");
   const [reason, setReason] = useState("");
   const [emotion, setEmotion] = useState("冷静");
   const [result, setResult] = useState("未確定");
@@ -84,6 +97,7 @@ export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("すべて");
   const [resultFilter, setResultFilter] = useState<ResultFilter>("すべて");
   const [ruleFilter, setRuleFilter] = useState<RuleFilter>("すべて");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("すべて");
   const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
 
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -111,13 +125,13 @@ export default function Home() {
           amount: normalizeStoredMoney(journal.amount),
           currency: journal.currency === "JPY" ? "JPY" : "USD",
           shareCount: normalizeStoredMoney(journal.shareCount),
-          status: "holding",
+          status: isJournalStatus(journal.status) ? journal.status : "holding",
           remainingShares: normalizeStoredMoney(
             journal.remainingShares ?? journal.shares ?? journal.shareCount
           ),
           acquisitionPrice: normalizeStoredMoney(journal.acquisitionPrice),
           profit: normalizeStoredMoney(journal.profit),
-          decision: journal.decision ?? "買い",
+          decision: normalizeEntryDirection(journal.decision),
           reason: journal.reason ?? "",
           emotion: journal.emotion ?? "冷静",
           result: journal.result ?? "未確定",
@@ -154,7 +168,7 @@ export default function Home() {
     setShareCount("");
     setAcquisitionPrice("");
     setProfit("");
-    setDecision("買い");
+    setDecision("Buy");
     setReason("");
     setEmotion("冷静");
     setResult("未確定");
@@ -175,7 +189,7 @@ export default function Home() {
     shareCount !== "" ||
     acquisitionPrice !== "" ||
     profit !== "" ||
-    decision !== "買い" ||
+    decision !== "Buy" ||
     reason !== "" ||
     emotion !== "冷静" ||
     result !== "未確定" ||
@@ -312,6 +326,7 @@ export default function Home() {
       (selectedDate === null || journal.tradeDate === selectedDate) &&
       (categoryFilter === "すべて" || journal.category === categoryFilter) &&
       (resultFilter === "すべて" || journal.result === resultFilter) &&
+      (statusFilter === "すべて" || journal.status === statusFilter) &&
       (ruleFilter === "すべて" ||
         journal.ruleFollowed === (ruleFilter === "守った")) &&
       `
@@ -335,12 +350,14 @@ export default function Home() {
     selectedDate !== null ||
     categoryFilter !== "すべて" ||
     resultFilter !== "すべて" ||
+    statusFilter !== "すべて" ||
     ruleFilter !== "すべて";
 
   const handleClearFilters = () => {
     setCategoryFilter("すべて");
     setResultFilter("すべて");
     setRuleFilter("すべて");
+    setStatusFilter("すべて");
     setSelectedDate(null);
   };
 
@@ -601,17 +618,15 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="block font-medium">判断</label>
+              <label className="block font-medium">エントリー方向</label>
 
               <select
                 className="mt-1 w-full rounded border p-2"
                 value={decision}
-                onChange={(e) => setDecision(e.target.value)}
+                onChange={(e) => setDecision(e.target.value as EntryDirection)}
               >
-                <option>買い</option>
-                <option>売り</option>
-                <option>見送り</option>
-                <option>予想</option>
+                <option>Buy</option>
+                <option>Sell</option>
               </select>
             </div>
 
@@ -764,12 +779,12 @@ export default function Home() {
 
             <input
               className="mt-4 w-full"
-              placeholder="検索：TEAM、AI、FOMC、買い など"
+              placeholder="検索：TEAM、AI、FOMC、Buy など"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
               <label htmlFor="category-filter">カテゴリ</label>
               <select
@@ -809,6 +824,20 @@ export default function Home() {
                 <option>守らなかった</option>
               </select>
               </div>
+
+              <div>
+              <label htmlFor="status-filter">状態</label>
+              <select
+                id="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+              >
+                <option value="すべて">すべて</option>
+                <option value="holding">保有中</option>
+                <option value="partial">一部決済</option>
+                <option value="closed">決済済</option>
+              </select>
+              </div>
             </div>
           </div>
 
@@ -843,7 +872,9 @@ export default function Home() {
                         <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${categoryBadgeClass(journal.category)}`}>{journal.category}</span>
                         <p className="font-semibold text-slate-100">{journal.target}</p>
                         <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${resultBadgeClass(journal.result)}`}>{journal.result || "未確定"}</span>
-                        <span className="rounded-full border border-sky-400/25 bg-sky-500/15 px-2.5 py-1 text-xs font-semibold text-sky-300">保有中</span>
+                        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusDisplay[journal.status].className}`}>
+                          状態：{statusDisplay[journal.status].label}
+                        </span>
                         <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${journal.ruleFollowed ? "border-emerald-400/25 bg-emerald-500/15 text-emerald-300" : "border-rose-400/25 bg-rose-500/15 text-rose-300"}`}>
                           {journal.ruleFollowed ? "守った" : "守らなかった"}
                         </span>
@@ -922,7 +953,7 @@ export default function Home() {
                         : "❌ 守れなかった"}
                     </p>
 
-                    <p>判断：{journal.decision}</p>
+                    <p>エントリー方向：{journal.decision}</p>
                     <p>心理状態：{journal.emotion}</p>
                     <p>理由：{journal.reason || "未入力"}</p>
                     <p>振り返り：{journal.review || "未入力"}</p>

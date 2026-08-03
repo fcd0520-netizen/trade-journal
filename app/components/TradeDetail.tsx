@@ -1,6 +1,12 @@
 import { calculateInvestment, formatProfitUsd, formatUsd, parseMoney } from "../lib/currency";
 import type { ActiveJournal } from "../types/journal";
 
+const statusDisplay = {
+  holding: { label: "保有中", className: "text-sky-300" },
+  partial: { label: "一部決済", className: "text-amber-300" },
+  closed: { label: "⚪ 決済済", className: "text-slate-300" },
+} as const;
+
 type TradeDetailProps = {
   journal: ActiveJournal;
   onBack: () => void;
@@ -36,6 +42,7 @@ const DetailSection = ({
 );
 
 export default function TradeDetail({ journal, onBack, onEdit }: TradeDetailProps) {
+  const status = statusDisplay[journal.status];
   const profit = parseMoney(journal.profit);
   const profitColor =
     profit === null || profit === 0
@@ -73,7 +80,7 @@ export default function TradeDetail({ journal, onBack, onEdit }: TradeDetailProp
             {journal.category}
           </span>
           <span aria-hidden="true" className="text-slate-700">｜</span>
-          <span className="text-slate-200">{journal.decision || "未選択"}</span>
+          <span className="text-slate-200">エントリー方向：{journal.decision}</span>
         </div>
         <div className="mt-4">
           <p className="text-xs font-medium tracking-wide text-slate-500">取引日</p>
@@ -89,7 +96,7 @@ export default function TradeDetail({ journal, onBack, onEdit }: TradeDetailProp
         </DetailSection>
 
         <DetailSection title="判断">
-          <DetailItem label="状態" value="保有中" valueClassName="text-sky-300" />
+          <DetailItem label="状態" value={status.label} valueClassName={status.className} />
           <DetailItem label="残り株数" value={journal.remainingShares ? `${journal.remainingShares}株` : "未入力"} />
           <DetailItem label="感情" value={journal.emotion || "未選択"} />
           <DetailItem
@@ -135,6 +142,16 @@ export default function TradeDetail({ journal, onBack, onEdit }: TradeDetailProp
             </div>
           </div>
         </section>
+
+        {(journal.status === "holding" || journal.status === "partial") && (
+          <button
+            type="button"
+            onClick={() => window.alert("決済機能は近日実装予定")}
+            className="min-h-12 w-full rounded-xl border border-rose-400/30 bg-rose-500/10 px-5 py-3 font-semibold text-rose-300 transition hover:bg-rose-500/20 focus:outline-none focus:ring-2 focus:ring-rose-500/60"
+          >
+            決済する
+          </button>
+        )}
       </div>
     </article>
   );
