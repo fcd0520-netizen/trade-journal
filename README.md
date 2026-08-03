@@ -50,3 +50,9 @@ Trade Journalは、売買記録を残すだけのアプリではありません�
 - 🔜 Version 1.0　Trade Journal Release
 - 🔜 Version 2.0　AI分析
 - 🔜 Version 3.0　AIコーチ
+
+Trade Journal
+
+Track your positions. Improve your decisions.
+
+「ポジションを管理し、良い意思決定を積み重ねるための投資ジャーナル」

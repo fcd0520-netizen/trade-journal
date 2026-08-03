@@ -29,19 +29,24 @@ const profitColor = (profit: number | null) =>
 const displayProfit = (profit: number | null) =>
   profit === null ? "データなし" : (formatProfitUsd(profit) ?? "$0.00");
 
+const journalProfit = (journal: ActiveJournal) =>
+  journal.settlements.length > 0
+    ? journal.settlements.reduce((total, settlement) => total + settlement.realizedProfit, 0)
+    : parseMoney(journal.profit);
+
 export default function Analytics({ journals }: AnalyticsProps) {
   const wins = journals.filter((journal) => journal.result === "勝ち");
   const losses = journals.filter((journal) => journal.result === "負け");
   const decidedTrades = wins.length + losses.length;
 
   const profitValues = journals
-    .map((journal) => parseMoney(journal.profit))
+    .map(journalProfit)
     .filter((profit): profit is number => profit !== null);
   const winningProfits = wins
-    .map((journal) => parseMoney(journal.profit))
+    .map(journalProfit)
     .filter((profit): profit is number => profit !== null);
   const losingProfits = losses
-    .map((journal) => parseMoney(journal.profit))
+    .map(journalProfit)
     .filter((profit): profit is number => profit !== null);
 
   const totalProfit = profitValues.reduce((total, profit) => total + profit, 0);

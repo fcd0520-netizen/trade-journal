@@ -9,14 +9,16 @@ import PaperTradeQuickForm from "./components/PaperTradeQuickForm";
 import Sidebar from "./components/Sidebar";
 import TradeDetail from "./components/TradeDetail";
 import WatchlistQuickForm from "./components/WatchlistQuickForm";
-import { calculateInvestment, formatProfitUsd, formatUsd, normalizeStoredMoney } from "./lib/currency";
-import type { ActiveJournal, Currency, EntryDirection, Journal, JournalStatus, TradeCategory } from "./types/journal";
+import { calculateInvestment, formatProfitCurrency, formatProfitUsd, formatUsd, normalizeStoredMoney, parseMoney } from "./lib/currency";
+import type { ActiveJournal, Currency, EntryDirection, Journal, JournalStatus, Settlement, TradeCategory } from "./types/journal";
 
 type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
   amount?: unknown;
   profit?: unknown;
   shares?: unknown;
   remainingShares?: unknown;
+  settlements?: unknown;
+  entrySide?: unknown;
   createdAt?: string;
 };
 
@@ -60,7 +62,33 @@ const isJournalStatus = (status: unknown): status is JournalStatus =>
   status === "holding" || status === "partial" || status === "closed";
 
 const normalizeEntryDirection = (decision: unknown): EntryDirection =>
-  decision === "Sell" || decision === "売り" ? "Sell" : "Buy";
+  decision === "Sell" || decision === "売り" || decision === "sell" ? "Sell" : "Buy";
+
+const normalizeSettlements = (value: unknown): Settlement[] => {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item, index) => {
+    if (typeof item !== "object" || item === null) return [];
+    const stored = item as Record<string, unknown>;
+    const quantity = parseMoney(stored.quantity);
+    const settlementPrice = parseMoney(stored.settlementPrice);
+    const realizedProfit = parseMoney(stored.realizedProfit);
+    if (quantity === null || settlementPrice === null || realizedProfit === null) return [];
+    return [{
+      id: typeof stored.id === "string" ? stored.id : `legacy-${index}-${String(stored.createdAt ?? "")}`,
+      settlementDate: typeof stored.settlementDate === "string" ? stored.settlementDate : getToday(),
+      quantity,
+      settlementPrice,
+      realizedProfit,
+      reason: typeof stored.reason === "string" ? stored.reason : "",
+      emotion: typeof stored.emotion === "string" ? stored.emotion : "",
+      review: typeof stored.review === "string" ? stored.review : "",
+      createdAt: typeof stored.createdAt === "string" ? stored.createdAt : new Date().toISOString(),
+    }];
+  });
+};
+
+const totalRealizedProfit = (journal: Journal) =>
+  journal.settlements.reduce((total, settlement) => total + settlement.realizedProfit, 0);
 
 const statusDisplay = {
   holding: { label: "保有中", className: "border-sky-400/25 bg-sky-500/15 text-sky-300" },
@@ -129,9 +157,10 @@ export default function Home() {
           remainingShares: normalizeStoredMoney(
             journal.remainingShares ?? journal.shares ?? journal.shareCount
           ),
+          settlements: normalizeSettlements(journal.settlements),
           acquisitionPrice: normalizeStoredMoney(journal.acquisitionPrice),
           profit: normalizeStoredMoney(journal.profit),
-          decision: normalizeEntryDirection(journal.decision),
+          decision: normalizeEntryDirection(journal.entrySide ?? journal.decision),
           reason: journal.reason ?? "",
           emotion: journal.emotion ?? "冷静",
           result: journal.result ?? "未確定",
@@ -235,6 +264,7 @@ export default function Home() {
       shareCount,
       status: existingJournal?.status ?? "holding",
       remainingShares: existingJournal?.remainingShares ?? shareCount,
+      settlements: existingJournal?.settlements ?? [],
       acquisitionPrice,
       profit,
       decision,
@@ -311,6 +341,24 @@ export default function Home() {
     }
 
     setMessage("記録を削除しました。");
+  };
+
+  const handleSettlement = (journalId: number, settlement: Settlement) => {
+    setJournals((currentJournals) =>
+      currentJournals.map((journal) => {
+        if (journal.id !== journalId) return journal;
+        const currentRemaining = parseMoney(journal.remainingShares) ?? parseMoney(journal.shareCount) ?? 0;
+        const originalShares = parseMoney(journal.shareCount) ?? currentRemaining;
+        const remaining = Math.max(0, currentRemaining - settlement.quantity);
+        return {
+          ...journal,
+          settlements: [...journal.settlements, settlement],
+          remainingShares: String(remaining),
+          status: remaining === 0 ? "closed" : remaining < originalShares ? "partial" : "holding",
+        };
+      })
+    );
+    setMessage("決済記録を保存しました。");
   };
 
   const activeJournals = journals.filter(
@@ -746,6 +794,7 @@ export default function Home() {
                 setSelectedTradeId(null);
                 handleEdit(journal);
               }}
+              onSettlement={handleSettlement}
             />
           ) : (
           <>
@@ -942,6 +991,12 @@ export default function Home() {
                     <p>
                       損益：
                       {formatProfitUsd(journal.profit) ?? "未入力"}
+                    </p>
+
+                    <p>残り数量：{journal.remainingShares || "0"}株</p>
+
+                    <p>
+                      累計確定損益：{formatProfitCurrency(totalRealizedProfit(journal), journal.currency) ?? "未入力"}
                     </p>
 
                     <p>勝敗：{journal.result || "未確定"}</p>

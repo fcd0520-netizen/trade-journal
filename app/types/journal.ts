@@ -3,6 +3,18 @@ export type Currency = "USD" | "JPY";
 export type EntryDirection = "Buy" | "Sell";
 export type JournalStatus = "holding" | "partial" | "closed";
 
+export type Settlement = {
+  id: string;
+  settlementDate: string;
+  quantity: number;
+  settlementPrice: number;
+  realizedProfit: number;
+  reason: string;
+  emotion: string;
+  review: string;
+  createdAt: string;
+};
+
 export type Journal = {
   id: number;
   createdAt: string;
@@ -17,6 +29,7 @@ export type Journal = {
   shareCount: string;
   status: JournalStatus;
   remainingShares: string;
+  settlements: Settlement[];
   acquisitionPrice: string;
   profit: string;
   decision: EntryDirection;

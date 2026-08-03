@@ -30,8 +30,8 @@ export const formatCurrency = (
   return new Intl.NumberFormat(currency === "USD" ? "en-US" : "ja-JP", {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: currency === "JPY" ? 0 : 2,
+    maximumFractionDigits: currency === "JPY" ? 0 : 2,
   }).format(parsed);
 };
 
@@ -63,6 +63,21 @@ export const formatProfitUsd = (value: unknown): string | null => {
   const formatted = formatUsd(Math.abs(parsed));
   if (formatted === null) return null;
   return parsed > 0 ? `+${formatted}` : parsed < 0 ? `-${formatted}` : formatted;
+};
+
+export const formatProfitCurrency = (
+  value: unknown,
+  currency: "USD" | "JPY"
+): string | null => {
+  const parsed = parseMoney(value);
+  if (parsed === null) return null;
+
+  const rounded = currency === "JPY"
+    ? Math.round(parsed)
+    : Math.round((parsed + Number.EPSILON) * 100) / 100;
+  const formatted = formatCurrency(Math.abs(rounded), currency);
+  if (formatted === null) return null;
+  return rounded > 0 ? `+${formatted}` : rounded < 0 ? `-${formatted}` : formatted;
 };
 
 export const normalizeStoredMoney = (value: unknown): string => {
