@@ -2,6 +2,8 @@ export type WatchlistCurrency = "USD" | "JPY";
 
 export type WatchlistStatus = "監視中" | "✅ 購入済" | "❌ 見送り";
 
+export type WatchlistSignal = "BUY" | "WATCH" | "HIGH" | "NO SIGNAL";
+
 export type WatchlistItem = {
   id: number;
   createdAt: string;

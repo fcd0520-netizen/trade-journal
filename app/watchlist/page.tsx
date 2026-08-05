@@ -6,10 +6,25 @@ import Sidebar from "../components/Sidebar";
 import type {
   WatchlistCurrency,
   WatchlistItem,
+  WatchlistSignal,
   WatchlistStatus,
 } from "../types/watchlist";
 
 const STORAGE_KEY = "trade-journal-watchlist";
+
+const MOCK_CURRENT_PRICES: Readonly<Record<string, number>> = {
+  MSFT: 492.81,
+  UBER: 71.99,
+  CAT: 876.54,
+  GS: 1052.98,
+};
+
+const signalClass: Record<WatchlistSignal, string> = {
+  BUY: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300",
+  WATCH: "border-amber-400/30 bg-amber-500/10 text-amber-300",
+  HIGH: "border-rose-400/30 bg-rose-500/10 text-rose-300",
+  "NO SIGNAL": "border-slate-500/30 bg-slate-500/10 text-slate-300",
+};
 
 const emptyForm = (): Omit<WatchlistItem, "id" | "createdAt"> => ({
   ticker: "",
@@ -40,6 +55,85 @@ function formatPrice(value: string, currency: WatchlistCurrency) {
   }).format(amount);
 }
 
+export function getCurrentPrice(ticker: string): number | null {
+  return MOCK_CURRENT_PRICES[ticker.trim().toUpperCase()] ?? null;
+}
+
+function toPositivePrice(value: string): number | null {
+  if (!value.trim()) return null;
+  const price = Number(value);
+  return Number.isFinite(price) && price > 0 ? price : null;
+}
+
+export function calculateChangePercent(
+  currentPrice: number | null,
+  startingPrice: string,
+): number | null {
+  const starting = toPositivePrice(startingPrice);
+  return currentPrice === null || starting === null
+    ? null
+    : ((currentPrice - starting) / starting) * 100;
+}
+
+export function calculateTargetDifference(
+  currentPrice: number | null,
+  targetPrice: string,
+): number | null {
+  const target = toPositivePrice(targetPrice);
+  return currentPrice === null || target === null
+    ? null
+    : ((currentPrice - target) / target) * 100;
+}
+
+export function getSignal(
+  currentPrice: number | null,
+  targetPrice: string,
+): WatchlistSignal {
+  const target = toPositivePrice(targetPrice);
+  if (currentPrice === null || target === null) return "NO SIGNAL";
+  if (currentPrice <= target) return "BUY";
+  return currentPrice >= target * 1.05 ? "HIGH" : "WATCH";
+}
+
+function formatPercent(value: number | null) {
+  if (value === null) return "計算不可";
+  const normalized = Math.abs(value) < 0.005 ? 0 : value;
+  return `${normalized > 0 ? "+" : ""}${normalized.toFixed(2)}%`;
+}
+
+function percentClass(value: number | null) {
+  if (value === null || Math.abs(value) < 0.005) return "text-slate-400";
+  return value > 0 ? "text-emerald-300" : "text-rose-300";
+}
+
+function formatCurrentPrice(value: number | null, currency: WatchlistCurrency) {
+  return value === null ? "未取得" : formatPrice(String(value), currency);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function normalizeSavedItems(value: unknown): WatchlistItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.filter(isRecord).map((item, index) => ({
+    id: typeof item.id === "number" ? item.id : Date.now() + index,
+    createdAt: typeof item.createdAt === "string" ? item.createdAt : new Date().toISOString(),
+    ticker: typeof item.ticker === "string" ? item.ticker : "",
+    companyName: typeof item.companyName === "string" ? item.companyName : "",
+    currency: item.currency === "JPY" ? "JPY" : "USD",
+    startingPrice: typeof item.startingPrice === "string" ? item.startingPrice : "",
+    targetPrice: typeof item.targetPrice === "string" ? item.targetPrice : "",
+    startDate: typeof item.startDate === "string" ? item.startDate : "",
+    reason: typeof item.reason === "string" ? item.reason : "",
+    status:
+      item.status === "✅ 購入済" || item.status === "❌ 見送り"
+        ? item.status
+        : "監視中",
+  }));
+}
+
 export default function WatchlistPage() {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [form, setForm] = useState(emptyForm);
@@ -51,7 +145,7 @@ export default function WatchlistPage() {
     const frame = window.requestAnimationFrame(() => {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) setItems(JSON.parse(saved) as WatchlistItem[]);
+        if (saved) setItems(normalizeSavedItems(JSON.parse(saved) as unknown));
       } catch {
         setMessage("保存データを読み込めませんでした。");
       }
@@ -172,13 +266,25 @@ export default function WatchlistPage() {
           ) : (
             <>
               <div className="mt-5 hidden overflow-x-auto rounded-xl border border-slate-800 lg:block">
-                <table className="w-full min-w-[980px] text-left text-sm">
-                  <thead className="bg-slate-950/70 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">ティッカー</th><th className="px-4 py-3">銘柄名</th><th className="px-4 py-3">監視開始価格</th><th className="px-4 py-3">希望購入価格</th><th className="px-4 py-3">ステータス</th><th className="px-4 py-3">監視開始日</th><th className="px-3 py-3">編集</th><th className="px-3 py-3">削除</th></tr></thead>
-                  <tbody>{items.map((item) => <tr key={item.id} className="border-t border-slate-800 text-slate-200"><td className="px-4 py-4 font-semibold text-white">{item.ticker}</td><td className="px-4 py-4">{item.companyName || "未入力"}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.startingPrice, item.currency)}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.targetPrice, item.currency)}</td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></td><td className="whitespace-nowrap px-4 py-4">{item.startDate || "未入力"}</td><td className="px-3 py-4"><button type="button" onClick={() => edit(item)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300 hover:bg-amber-500/20">編集</button></td><td className="px-3 py-4"><button type="button" onClick={() => remove(item.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300 hover:bg-rose-500/20">削除</button></td></tr>)}</tbody>
+                <table className="w-full min-w-[1480px] text-left text-sm">
+                  <thead className="bg-slate-950/70 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">ティッカー</th><th className="px-4 py-3">銘柄名</th><th className="px-4 py-3">監視開始価格</th><th className="px-4 py-3">希望購入価格</th><th className="px-4 py-3">現在価格</th><th className="px-4 py-3">監視開始比</th><th className="px-4 py-3">希望価格との差</th><th className="px-4 py-3">シグナル</th><th className="px-4 py-3">ステータス</th><th className="px-4 py-3">監視開始日</th><th className="px-3 py-3">編集</th><th className="px-3 py-3">削除</th></tr></thead>
+                  <tbody>{items.map((item) => {
+                    const currentPrice = getCurrentPrice(item.ticker);
+                    const changePercent = calculateChangePercent(currentPrice, item.startingPrice);
+                    const targetDifference = calculateTargetDifference(currentPrice, item.targetPrice);
+                    const signal = getSignal(currentPrice, item.targetPrice);
+                    return <tr key={item.id} className="border-t border-slate-800 text-slate-200"><td className="px-4 py-4 font-semibold text-white">{item.ticker}</td><td className="px-4 py-4">{item.companyName || "未入力"}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.startingPrice, item.currency)}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.targetPrice, item.currency)}</td><td className="whitespace-nowrap px-4 py-4 font-semibold text-white">{formatCurrentPrice(currentPrice, item.currency)}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></td><td className="whitespace-nowrap px-4 py-4">{item.startDate || "未入力"}</td><td className="px-3 py-4"><button type="button" onClick={() => edit(item)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300 hover:bg-amber-500/20">編集</button></td><td className="px-3 py-4"><button type="button" onClick={() => remove(item.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300 hover:bg-rose-500/20">削除</button></td></tr>;
+                  })}</tbody>
                 </table>
               </div>
 
-              <div className="mt-5 space-y-3 lg:hidden">{items.map((item) => <article key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{item.ticker}</h3><span className="text-sm text-slate-400">{item.companyName || "銘柄名未入力"}</span><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-4 text-sm"><div><dt className="text-slate-500">監視開始価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.startingPrice, item.currency)}</dd></div><div><dt className="text-slate-500">希望購入価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.targetPrice, item.currency)}</dd></div><div className="col-span-2"><dt className="text-slate-500">監視開始日</dt><dd className="mt-1 text-slate-200">{item.startDate || "未入力"}</dd></div></dl><div className="mt-4 flex gap-2"><button type="button" onClick={() => edit(item)} className="min-h-10 flex-1 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300">編集</button><button type="button" onClick={() => remove(item.id)} className="min-h-10 flex-1 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300">削除</button></div></article>)}</div>
+              <div className="mt-5 space-y-3 lg:hidden">{items.map((item) => {
+                const currentPrice = getCurrentPrice(item.ticker);
+                const changePercent = calculateChangePercent(currentPrice, item.startingPrice);
+                const targetDifference = calculateTargetDifference(currentPrice, item.targetPrice);
+                const signal = getSignal(currentPrice, item.targetPrice);
+                return <article key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{item.ticker}</h3><span className="text-sm text-slate-400">{item.companyName || "銘柄名未入力"}</span><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-4 text-sm"><div><dt className="text-slate-500">監視開始価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.startingPrice, item.currency)}</dd></div><div><dt className="text-slate-500">希望購入価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.targetPrice, item.currency)}</dd></div><div><dt className="text-slate-500">現在価格</dt><dd className="mt-1 font-semibold text-white">{formatCurrentPrice(currentPrice, item.currency)}</dd></div><div><dt className="text-slate-500">シグナル</dt><dd className="mt-1"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></dd></div><div><dt className="text-slate-500">監視開始比</dt><dd className={`mt-1 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</dd></div><div><dt className="text-slate-500">希望価格との差</dt><dd className={`mt-1 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</dd></div><div className="col-span-2"><dt className="text-slate-500">監視開始日</dt><dd className="mt-1 text-slate-200">{item.startDate || "未入力"}</dd></div></dl><div className="mt-4 flex gap-2"><button type="button" onClick={() => edit(item)} className="min-h-10 flex-1 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300">編集</button><button type="button" onClick={() => remove(item.id)} className="min-h-10 flex-1 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300">削除</button></div></article>;
+              })}</div>
             </>
           )}
         </section>
