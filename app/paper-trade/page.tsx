@@ -27,13 +27,17 @@ export default function PaperTradePage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setTrades(JSON.parse(saved) as PaperTrade[]);
-    } catch {
-      setMessage("保存データを読み込めませんでした。");
-    }
-    setLoaded(true);
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) setTrades(JSON.parse(saved) as PaperTrade[]);
+      } catch {
+        setMessage("保存データを読み込めませんでした。");
+      }
+      setLoaded(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {

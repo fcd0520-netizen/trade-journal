@@ -8,16 +8,10 @@ import type {
   WatchlistItem,
   WatchlistSignal,
   WatchlistStatus,
+  StockQuote,
 } from "../types/watchlist";
 
 const STORAGE_KEY = "trade-journal-watchlist";
-
-const MOCK_CURRENT_PRICES: Readonly<Record<string, number>> = {
-  MSFT: 492.81,
-  UBER: 71.99,
-  CAT: 876.54,
-  GS: 1052.98,
-};
 
 const signalClass: Record<WatchlistSignal, string> = {
   BUY: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300",
@@ -53,10 +47,6 @@ function formatPrice(value: string, currency: WatchlistCurrency) {
     currency,
     maximumFractionDigits: currency === "JPY" ? 0 : 2,
   }).format(amount);
-}
-
-export function getCurrentPrice(ticker: string): number | null {
-  return MOCK_CURRENT_PRICES[ticker.trim().toUpperCase()] ?? null;
 }
 
 function toPositivePrice(value: string): number | null {
@@ -107,7 +97,36 @@ function percentClass(value: number | null) {
 }
 
 function formatCurrentPrice(value: number | null, currency: WatchlistCurrency) {
-  return value === null ? "未取得" : formatPrice(String(value), currency);
+  return value === null ? "未更新" : formatPrice(String(value), currency);
+}
+
+function formatUpdatedAt(value: number | null) {
+  if (value === null) return null;
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function isStockQuote(value: unknown): value is StockQuote {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.ticker === "string" &&
+    typeof value.currentPrice === "number" &&
+    value.currentPrice > 0 &&
+    ["currentPrice", "change", "changePercent", "high", "low", "open", "previousClose", "updatedAt"].every(
+      (key) => typeof value[key] === "number" && Number.isFinite(value[key]),
+    )
+  );
+}
+
+function getErrorMessage(value: unknown) {
+  return isRecord(value) && typeof value.error === "string"
+    ? value.error
+    : "株価を取得できませんでした。";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -140,6 +159,11 @@ export default function WatchlistPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState("");
+  const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
+  const [quoteErrors, setQuoteErrors] = useState<Record<string, string>>({});
+  const [updatingTickers, setUpdatingTickers] = useState<ReadonlySet<string>>(new Set());
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -217,6 +241,83 @@ export default function WatchlistPage() {
     setMessage("Watchlistから削除しました。");
   };
 
+  const updateQuotes = async () => {
+    if (isUpdating || items.length === 0) return;
+
+    const tickers = Array.from(
+      new Set(
+        items
+          .filter((item) => item.currency === "USD")
+          .map((item) => item.ticker.trim().toUpperCase())
+          .filter(Boolean),
+      ),
+    );
+    if (tickers.length === 0) return;
+
+    setIsUpdating(true);
+    setUpdatingTickers(new Set(tickers));
+    setQuoteErrors((current) => {
+      const next = { ...current };
+      tickers.forEach((ticker) => delete next[ticker]);
+      return next;
+    });
+
+    const fetchQuote = async (ticker: string): Promise<boolean> => {
+      try {
+        const response = await fetch(`/api/stock-quote?ticker=${encodeURIComponent(ticker)}`, {
+          cache: "no-store",
+        });
+        const data: unknown = await response.json();
+        if (!response.ok) throw new Error(getErrorMessage(data));
+        if (!isStockQuote(data)) throw new Error("株価データの形式が不正です。");
+        setQuotes((current) => ({ ...current, [ticker]: data }));
+        return true;
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : "株価を取得できませんでした。";
+        setQuoteErrors((current) => ({ ...current, [ticker]: errorMessage }));
+        return false;
+      } finally {
+        setUpdatingTickers((current) => {
+          const next = new Set(current);
+          next.delete(ticker);
+          return next;
+        });
+      }
+    };
+
+    try {
+      const concurrency = 3;
+      let successfulUpdates = 0;
+      for (let index = 0; index < tickers.length; index += concurrency) {
+        const results = await Promise.all(tickers.slice(index, index + concurrency).map(fetchQuote));
+        successfulUpdates += results.filter(Boolean).length;
+      }
+      if (successfulUpdates > 0) setLastUpdatedAt(Date.now());
+    } finally {
+      setIsUpdating(false);
+      setUpdatingTickers(new Set());
+    }
+  };
+
+  const getQuoteDisplay = (item: WatchlistItem) => {
+    const ticker = item.ticker.trim().toUpperCase();
+    if (item.currency === "JPY") {
+      return { currentPrice: null, priceLabel: "未対応", detail: "日本株は未対応です。" };
+    }
+    if (updatingTickers.has(ticker)) {
+      return { currentPrice: null, priceLabel: "取得中…", detail: null };
+    }
+    if (quoteErrors[ticker]) {
+      return { currentPrice: null, priceLabel: "取得失敗", detail: quoteErrors[ticker] };
+    }
+    const quote = quotes[ticker];
+    return {
+      currentPrice: quote?.currentPrice ?? null,
+      priceLabel: formatCurrentPrice(quote?.currentPrice ?? null, item.currency),
+      detail: quote ? `更新：${formatUpdatedAt(quote.updatedAt * 1000)}` : null,
+    };
+  };
+
   return (
     <main className="ios-app min-h-screen bg-[#060b16] px-4 py-20 sm:px-6 sm:py-12 lg:pl-[calc(16rem+1.5rem)]">
       <Sidebar />
@@ -258,8 +359,23 @@ export default function WatchlistPage() {
         </section>
 
         <section className="ios-card rounded-2xl p-5 sm:p-7">
-          <h2 className="text-xl font-semibold text-white">一覧</h2>
-          <p className="mt-1 text-sm text-slate-500">{items.length}件</p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-white">一覧</h2>
+              <p className="mt-1 text-sm text-slate-500">{items.length}件</p>
+              {lastUpdatedAt !== null && (
+                <p className="mt-1 text-xs text-slate-400">最終更新：{formatUpdatedAt(lastUpdatedAt)}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => void updateQuotes()}
+              disabled={isUpdating || items.length === 0}
+              className="min-h-11 bg-sky-600 px-5 text-sm font-semibold text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+            >
+              {isUpdating ? "更新中…" : "株価を更新"}
+            </button>
+          </div>
 
           {items.length === 0 ? (
             <p className="mt-5 rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-500">まだWatchlistに銘柄がありません。</p>
@@ -269,21 +385,21 @@ export default function WatchlistPage() {
                 <table className="w-full min-w-[1480px] text-left text-sm">
                   <thead className="bg-slate-950/70 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">ティッカー</th><th className="px-4 py-3">銘柄名</th><th className="px-4 py-3">監視開始価格</th><th className="px-4 py-3">希望購入価格</th><th className="px-4 py-3">現在価格</th><th className="px-4 py-3">監視開始比</th><th className="px-4 py-3">希望価格との差</th><th className="px-4 py-3">シグナル</th><th className="px-4 py-3">ステータス</th><th className="px-4 py-3">監視開始日</th><th className="px-3 py-3">編集</th><th className="px-3 py-3">削除</th></tr></thead>
                   <tbody>{items.map((item) => {
-                    const currentPrice = getCurrentPrice(item.ticker);
+                    const { currentPrice, priceLabel, detail } = getQuoteDisplay(item);
                     const changePercent = calculateChangePercent(currentPrice, item.startingPrice);
                     const targetDifference = calculateTargetDifference(currentPrice, item.targetPrice);
                     const signal = getSignal(currentPrice, item.targetPrice);
-                    return <tr key={item.id} className="border-t border-slate-800 text-slate-200"><td className="px-4 py-4 font-semibold text-white">{item.ticker}</td><td className="px-4 py-4">{item.companyName || "未入力"}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.startingPrice, item.currency)}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.targetPrice, item.currency)}</td><td className="whitespace-nowrap px-4 py-4 font-semibold text-white">{formatCurrentPrice(currentPrice, item.currency)}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></td><td className="whitespace-nowrap px-4 py-4">{item.startDate || "未入力"}</td><td className="px-3 py-4"><button type="button" onClick={() => edit(item)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300 hover:bg-amber-500/20">編集</button></td><td className="px-3 py-4"><button type="button" onClick={() => remove(item.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300 hover:bg-rose-500/20">削除</button></td></tr>;
+                    return <tr key={item.id} className="border-t border-slate-800 text-slate-200"><td className="px-4 py-4 font-semibold text-white">{item.ticker}</td><td className="px-4 py-4">{item.companyName || "未入力"}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.startingPrice, item.currency)}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.targetPrice, item.currency)}</td><td className="px-4 py-4"><span className="whitespace-nowrap font-semibold text-white">{priceLabel}</span>{detail && <span className={`mt-1 block max-w-52 text-xs ${quoteErrors[item.ticker.trim().toUpperCase()] ? "text-rose-300" : "text-slate-500"}`}>{detail}</span>}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></td><td className="whitespace-nowrap px-4 py-4">{item.startDate || "未入力"}</td><td className="px-3 py-4"><button type="button" onClick={() => edit(item)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300 hover:bg-amber-500/20">編集</button></td><td className="px-3 py-4"><button type="button" onClick={() => remove(item.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300 hover:bg-rose-500/20">削除</button></td></tr>;
                   })}</tbody>
                 </table>
               </div>
 
               <div className="mt-5 space-y-3 lg:hidden">{items.map((item) => {
-                const currentPrice = getCurrentPrice(item.ticker);
+                const { currentPrice, priceLabel, detail } = getQuoteDisplay(item);
                 const changePercent = calculateChangePercent(currentPrice, item.startingPrice);
                 const targetDifference = calculateTargetDifference(currentPrice, item.targetPrice);
                 const signal = getSignal(currentPrice, item.targetPrice);
-                return <article key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{item.ticker}</h3><span className="text-sm text-slate-400">{item.companyName || "銘柄名未入力"}</span><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-4 text-sm"><div><dt className="text-slate-500">監視開始価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.startingPrice, item.currency)}</dd></div><div><dt className="text-slate-500">希望購入価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.targetPrice, item.currency)}</dd></div><div><dt className="text-slate-500">現在価格</dt><dd className="mt-1 font-semibold text-white">{formatCurrentPrice(currentPrice, item.currency)}</dd></div><div><dt className="text-slate-500">シグナル</dt><dd className="mt-1"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></dd></div><div><dt className="text-slate-500">監視開始比</dt><dd className={`mt-1 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</dd></div><div><dt className="text-slate-500">希望価格との差</dt><dd className={`mt-1 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</dd></div><div className="col-span-2"><dt className="text-slate-500">監視開始日</dt><dd className="mt-1 text-slate-200">{item.startDate || "未入力"}</dd></div></dl><div className="mt-4 flex gap-2"><button type="button" onClick={() => edit(item)} className="min-h-10 flex-1 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300">編集</button><button type="button" onClick={() => remove(item.id)} className="min-h-10 flex-1 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300">削除</button></div></article>;
+                return <article key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{item.ticker}</h3><span className="text-sm text-slate-400">{item.companyName || "銘柄名未入力"}</span><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-4 text-sm"><div><dt className="text-slate-500">監視開始価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.startingPrice, item.currency)}</dd></div><div><dt className="text-slate-500">希望購入価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.targetPrice, item.currency)}</dd></div><div><dt className="text-slate-500">現在価格</dt><dd className="mt-1 font-semibold text-white">{priceLabel}</dd>{detail && <dd className={`mt-1 text-xs ${quoteErrors[item.ticker.trim().toUpperCase()] ? "text-rose-300" : "text-slate-500"}`}>{detail}</dd>}</div><div><dt className="text-slate-500">シグナル</dt><dd className="mt-1"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></dd></div><div><dt className="text-slate-500">監視開始比</dt><dd className={`mt-1 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</dd></div><div><dt className="text-slate-500">希望価格との差</dt><dd className={`mt-1 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</dd></div><div className="col-span-2"><dt className="text-slate-500">監視開始日</dt><dd className="mt-1 text-slate-200">{item.startDate || "未入力"}</dd></div></dl><div className="mt-4 flex gap-2"><button type="button" onClick={() => edit(item)} className="min-h-10 flex-1 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300">編集</button><button type="button" onClick={() => remove(item.id)} className="min-h-10 flex-1 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300">削除</button></div></article>;
               })}</div>
             </>
           )}

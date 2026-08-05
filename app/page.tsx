@@ -132,11 +132,12 @@ export default function Home() {
   const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const frame = window.requestAnimationFrame(() => {
+      const saved = localStorage.getItem(STORAGE_KEY);
 
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as StoredJournal[];
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved) as StoredJournal[];
 
         const restored: Journal[] = parsed.map((journal) => ({
           id: journal.id ?? Date.now(),
@@ -169,13 +170,16 @@ export default function Home() {
           tradeDate: journal.tradeDate ?? journal.createdAt ?? getToday(),
         }));
 
-        setJournals(restored);
-      } catch {
-        setMessage("保存データを読み込めませんでした。");
+          setJournals(restored);
+        } catch {
+          setMessage("保存データを読み込めませんでした。");
+        }
       }
-    }
 
-    setHasLoaded(true);
+      setHasLoaded(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   useEffect(() => {

@@ -16,3 +16,15 @@ export type WatchlistItem = {
   reason: string;
   status: WatchlistStatus;
 };
+
+export type StockQuote = {
+  ticker: string;
+  currentPrice: number;
+  change: number;
+  changePercent: number;
+  high: number;
+  low: number;
+  open: number;
+  previousClose: number;
+  updatedAt: number;
+};
