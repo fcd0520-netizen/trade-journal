@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Sidebar from "../components/Sidebar";
 import StockPriceChart from "./components/StockPriceChart";
+import { extractTradeMarkers, type TradeMarker } from "./lib/trade-markers";
 import type {
   WatchlistCurrency,
   WatchlistItem,
@@ -13,6 +14,7 @@ import type {
 } from "../types/watchlist";
 
 const STORAGE_KEY = "trade-journal-watchlist";
+const JOURNAL_STORAGE_KEY = "trade-journals";
 
 const signalClass: Record<WatchlistSignal, string> = {
   BUY: "border-emerald-400/30 bg-emerald-500/10 text-emerald-300",
@@ -166,12 +168,21 @@ export default function WatchlistPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [selectedChartId, setSelectedChartId] = useState<number | null>(null);
+  const [tradeMarkersByTicker, setTradeMarkersByTicker] = useState<Record<string, TradeMarker[]>>({});
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) setItems(normalizeSavedItems(JSON.parse(saved) as unknown));
+        const savedJournals = localStorage.getItem(JOURNAL_STORAGE_KEY);
+        if (savedJournals) {
+          const parsedJournals: unknown = JSON.parse(savedJournals);
+          const journalTickers = Array.isArray(parsedJournals)
+            ? Array.from(new Set(parsedJournals.flatMap((entry) => isRecord(entry) && typeof entry.target === "string" ? [entry.target.trim().toUpperCase()] : [])))
+            : [];
+          setTradeMarkersByTicker(Object.fromEntries(journalTickers.map((ticker) => [ticker, extractTradeMarkers(parsedJournals, ticker)])));
+        }
       } catch {
         setMessage("保存データを読み込めませんでした。");
       }
@@ -417,6 +428,7 @@ export default function WatchlistPage() {
             key={selectedChartItem.id}
             item={selectedChartItem}
             currentPrice={selectedChartPrice}
+            tradeMarkers={tradeMarkersByTicker[selectedChartItem.ticker.trim().toUpperCase()] ?? []}
             onClose={() => setSelectedChartId(null)}
           />
         )}

@@ -5,6 +5,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -13,10 +14,12 @@ import {
 } from "recharts";
 import type { StockHistoryRange, StockHistoryResponse } from "../../types/stock-history";
 import type { WatchlistItem } from "../../types/watchlist";
+import type { TradeMarker } from "../lib/trade-markers";
 
 type Props = {
   item: WatchlistItem;
   currentPrice: number | null;
+  tradeMarkers: TradeMarker[];
   onClose: () => void;
 };
 
@@ -60,7 +63,7 @@ function positivePrice(value: string): number | null {
   return value.trim() && Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-export default function StockPriceChart({ item, currentPrice, onClose }: Props) {
+export default function StockPriceChart({ item, currentPrice, tradeMarkers, onClose }: Props) {
   const [range, setRange] = useState<StockHistoryRange>("3M");
   const [data, setData] = useState<StockHistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,6 +116,9 @@ export default function StockPriceChart({ item, currentPrice, onClose }: Props) 
 
   const startingPrice = positivePrice(item.startingPrice);
   const targetPrice = positivePrice(item.targetPrice);
+  const visibleTradeMarkers = data
+    ? tradeMarkers.filter((marker) => data.points.some((point) => point.date === marker.date))
+    : [];
   const changeRange = (nextRange: StockHistoryRange) => {
     if (loading || nextRange === range) return;
     setLoading(true);
@@ -157,10 +163,45 @@ export default function StockPriceChart({ item, currentPrice, onClose }: Props) 
               {targetPrice !== null && <ReferenceLine y={targetPrice} stroke="#34d399" strokeDasharray="5 4" label={{ value: "希望価格", fill: "#6ee7b7", fontSize: 11, position: "insideBottomRight" }} />}
               {currentPrice !== null && <ReferenceLine y={currentPrice} stroke="#a78bfa" strokeDasharray="5 4" label={{ value: "現在価格", fill: "#c4b5fd", fontSize: 11, position: "insideTopLeft" }} />}
               <Line type="monotone" dataKey="close" name="終値" stroke="#38bdf8" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#67e8f9", stroke: "#082f49" }} />
+              {visibleTradeMarkers.map((marker) => (
+                <ReferenceDot
+                  key={marker.id}
+                  x={marker.date}
+                  y={marker.price}
+                  r={6}
+                  fill={marker.kind === "buy" ? "#34d399" : "#fb7185"}
+                  stroke={marker.kind === "buy" ? "#052e2b" : "#4c0519"}
+                  strokeWidth={2}
+                  label={{
+                    value: marker.label,
+                    fill: marker.kind === "buy" ? "#6ee7b7" : "#fda4af",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    position: marker.kind === "buy" ? "bottom" : "top",
+                  }}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         )}
       </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full border-2 border-emerald-950 bg-emerald-400" />買い・買戻し</span>
+        <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full border-2 border-rose-950 bg-rose-400" />売り・決済</span>
+        {tradeMarkers.length === 0 && <span>この銘柄の売買記録はまだありません</span>}
+        {tradeMarkers.length > 0 && visibleTradeMarkers.length === 0 && <span>選択期間内に売買記録はありません</span>}
+      </div>
+
+      {visibleTradeMarkers.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2" aria-label="表示中の売買記録">
+          {visibleTradeMarkers.map((marker) => (
+            <span key={`detail-${marker.id}`} className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${marker.kind === "buy" ? "border-emerald-400/25 bg-emerald-500/10 text-emerald-300" : "border-rose-400/25 bg-rose-500/10 text-rose-300"}`}>
+              {marker.date} {marker.label} {price(marker.price)}{marker.quantity !== null ? ` × ${marker.quantity}株` : ""}
+            </span>
+          ))}
+        </div>
+      )}
 
       <dl className="mt-6 grid gap-3 border-t border-slate-800 pt-5 text-sm sm:grid-cols-3">
         <div><dt className="text-slate-500">監視開始価格</dt><dd className="mt-1 font-semibold text-slate-100">{price(item.startingPrice)}</dd></div>
