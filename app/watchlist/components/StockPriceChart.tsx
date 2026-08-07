@@ -13,14 +13,20 @@ import {
   YAxis,
 } from "recharts";
 import type { StockHistoryRange, StockHistoryResponse } from "../../types/stock-history";
-import type { WatchlistItem } from "../../types/watchlist";
 import type { TradeMarker } from "../lib/trade-markers";
 
+type ChartItem = {
+  ticker: string;
+  startingPrice: string;
+  targetPrice: string;
+};
+
 type Props = {
-  item: WatchlistItem;
+  item: ChartItem;
   currentPrice: number | null;
   tradeMarkers: TradeMarker[];
-  onClose: () => void;
+  onClose?: () => void;
+  context?: "watchlist" | "journal";
 };
 
 const RANGE_LABELS: Record<StockHistoryRange, string> = {
@@ -63,7 +69,7 @@ function positivePrice(value: string): number | null {
   return value.trim() && Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-export default function StockPriceChart({ item, currentPrice, tradeMarkers, onClose }: Props) {
+export default function StockPriceChart({ item, currentPrice, tradeMarkers, onClose, context = "watchlist" }: Props) {
   const [range, setRange] = useState<StockHistoryRange>("3M");
   const [data, setData] = useState<StockHistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -134,7 +140,7 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-400">PRICE HISTORY</p>
           <h2 id="chart-title" className="mt-1 text-xl font-semibold text-white">{ticker} 株価チャート</h2>
         </div>
-        <button type="button" onClick={onClose} className="min-h-10 border border-slate-700 px-4 text-sm text-slate-300 hover:bg-slate-800">閉じる</button>
+        {onClose && <button type="button" onClick={onClose} className="min-h-10 border border-slate-700 px-4 text-sm text-slate-300 hover:bg-slate-800">閉じる</button>}
       </div>
 
       <div className="mt-5 flex gap-2" aria-label="チャート期間">
@@ -159,8 +165,8 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
               <XAxis dataKey="date" stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(date: string) => date.slice(5).replace("-", "/")} minTickGap={28} />
               <YAxis domain={["auto", "auto"]} stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(value: number) => `$${value.toFixed(0)}`} width={58} />
               <Tooltip contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 12, color: "#f8fafc" }} labelFormatter={(label) => `日付：${String(label)}`} formatter={(value) => [price(typeof value === "number" ? value : Number(value)), "終値"]} />
-              {startingPrice !== null && <ReferenceLine y={startingPrice} stroke="#f59e0b" strokeDasharray="5 4" label={{ value: "監視開始", fill: "#fbbf24", fontSize: 11, position: "insideTopRight" }} />}
-              {targetPrice !== null && <ReferenceLine y={targetPrice} stroke="#34d399" strokeDasharray="5 4" label={{ value: "希望価格", fill: "#6ee7b7", fontSize: 11, position: "insideBottomRight" }} />}
+              {startingPrice !== null && <ReferenceLine y={startingPrice} stroke="#f59e0b" strokeDasharray="5 4" label={{ value: context === "journal" ? "取得単価" : "監視開始", fill: "#fbbf24", fontSize: 11, position: "insideTopRight" }} />}
+              {context === "watchlist" && targetPrice !== null && <ReferenceLine y={targetPrice} stroke="#34d399" strokeDasharray="5 4" label={{ value: "希望価格", fill: "#6ee7b7", fontSize: 11, position: "insideBottomRight" }} />}
               {currentPrice !== null && <ReferenceLine y={currentPrice} stroke="#a78bfa" strokeDasharray="5 4" label={{ value: "現在価格", fill: "#c4b5fd", fontSize: 11, position: "insideTopLeft" }} />}
               <Line type="monotone" dataKey="close" name="終値" stroke="#38bdf8" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: "#67e8f9", stroke: "#082f49" }} />
               {visibleTradeMarkers.map((marker) => (
@@ -203,10 +209,10 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
         </div>
       )}
 
-      <dl className="mt-6 grid gap-3 border-t border-slate-800 pt-5 text-sm sm:grid-cols-3">
-        <div><dt className="text-slate-500">監視開始価格</dt><dd className="mt-1 font-semibold text-slate-100">{price(item.startingPrice)}</dd></div>
-        <div><dt className="text-slate-500">希望購入価格</dt><dd className="mt-1 font-semibold text-slate-100">{price(item.targetPrice)}</dd></div>
-        <div><dt className="text-slate-500">現在価格</dt><dd className="mt-1 font-semibold text-slate-100">{price(currentPrice)}</dd></div>
+      <dl className={`mt-6 grid gap-3 border-t border-slate-800 pt-5 text-sm ${context === "watchlist" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+        <div><dt className="text-slate-500">{context === "journal" ? "取得単価" : "監視開始価格"}</dt><dd className="mt-1 font-semibold text-slate-100">{price(item.startingPrice)}</dd></div>
+        {context === "watchlist" && <div><dt className="text-slate-500">希望購入価格</dt><dd className="mt-1 font-semibold text-slate-100">{price(item.targetPrice)}</dd></div>}
+        <div><dt className="text-slate-500">チャート最新終値</dt><dd className="mt-1 font-semibold text-slate-100">{data?.points.at(-1) ? price(data.points.at(-1)?.close ?? null) : price(currentPrice)}</dd></div>
       </dl>
     </section>
   );

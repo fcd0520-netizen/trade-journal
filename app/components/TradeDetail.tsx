@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { calculateInvestment, formatCurrency, formatProfitCurrency, parseMoney } from "../lib/currency";
 import type { ActiveJournal, Settlement } from "../types/journal";
+import StockPriceChart from "../watchlist/components/StockPriceChart";
+import { extractTradeMarkers } from "../watchlist/lib/trade-markers";
 
 const statusDisplay = {
   holding: { label: "保有中", className: "text-sky-300" },
@@ -45,6 +47,8 @@ export default function TradeDetail({ journal, onBack, onEdit, onSettlement }: T
   const sortedSettlements = [...journal.settlements].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const acquisitionPrice = parseMoney(journal.acquisitionPrice);
   const remainingShares = parseMoney(journal.remainingShares) ?? 0;
+  const showStockChart = journal.category === "株式" && journal.currency === "USD";
+  const tradeMarkers = showStockChart ? extractTradeMarkers([journal], journal.target) : [];
 
   const resetSettlementForm = () => {
     setSettlementDate(getToday()); setQuantity(journal.remainingShares); setSettlementPrice("");
@@ -87,6 +91,15 @@ export default function TradeDetail({ journal, onBack, onEdit, onSettlement }: T
       </header>
 
       <div className="mt-5 space-y-4">
+        {showStockChart && (
+          <StockPriceChart
+            item={{ ticker: journal.target, startingPrice: journal.acquisitionPrice, targetPrice: "" }}
+            currentPrice={null}
+            tradeMarkers={tradeMarkers}
+            context="journal"
+          />
+        )}
+
         <DetailSection title="ポジション状況">
           <DetailItem label="現在のstatus" value={statusDisplay[journal.status].label} valueClassName={statusDisplay[journal.status].className} />
           <DetailItem label="残り数量" value={`${journal.remainingShares || "0"}株`} />
