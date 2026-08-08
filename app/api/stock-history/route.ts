@@ -61,8 +61,23 @@ function parseAlphaVantageResponse(value: unknown): AlphaVantageDailyResponse | 
 
 function toPoints(series: Record<string, AlphaVantageDailyPrice>): StockHistoryPoint[] {
   return Object.entries(series)
-    .map(([date, price]) => ({ date, close: Number(price["4. close"]) }))
-    .filter((point) => /^\d{4}-\d{2}-\d{2}$/.test(point.date) && Number.isFinite(point.close) && point.close > 0)
+    .map(([date, price]) => ({
+      date,
+      open: Number(price["1. open"]),
+      high: Number(price["2. high"]),
+      low: Number(price["3. low"]),
+      close: Number(price["4. close"]),
+      volume: Number(price["5. volume"]),
+    }))
+    .filter((point) =>
+      /^\d{4}-\d{2}-\d{2}$/.test(point.date) &&
+      [point.open, point.high, point.low, point.close, point.volume].every(Number.isFinite) &&
+      point.open > 0 &&
+      point.high >= Math.max(point.open, point.close) &&
+      point.low > 0 &&
+      point.low <= Math.min(point.open, point.close) &&
+      point.volume >= 0,
+    )
     .sort((left, right) => left.date.localeCompare(right.date));
 }
 
