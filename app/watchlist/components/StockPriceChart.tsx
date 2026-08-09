@@ -15,7 +15,8 @@ import {
   YAxis,
 } from "recharts";
 import type { BarShapeProps, TooltipContentProps } from "recharts";
-import type { StockHistoryPoint, StockHistoryRange, StockHistoryResponse } from "../../types/stock-history";
+import type { EarningsCalendarResponse, EarningsEvent, EarningsTimeOfDay } from "../../types/earnings";
+import type { StockHistoryRange, StockHistoryResponse } from "../../types/stock-history";
 import type { TradeMarker } from "../lib/trade-markers";
 
 type ChartItem = {
@@ -38,10 +39,29 @@ const RANGE_LABELS: Record<StockHistoryRange, string> = {
   "6M": "6か月",
 };
 
-const historyCache = new Map<string, StockHistoryResponse>();
+const RANGE_CALENDAR_DAYS: Record<StockHistoryRange, number> = {
+  "1M": 31,
+  "3M": 93,
+  "6M": 186,
+};
 
-type CandlestickPoint = StockHistoryPoint & {
-  priceRange: [number, number];
+const historyCache = new Map<string, StockHistoryResponse>();
+const earningsCache = new Map<string, EarningsCalendarResponse>();
+
+type ChartPoint = {
+  date: string;
+  open: number | null;
+  high: number | null;
+  low: number | null;
+  close: number | null;
+  volume: number | null;
+  priceRange: [number, number] | null;
+};
+
+type EarningsState = {
+  ticker: string;
+  data: EarningsCalendarResponse | null;
+  error: string;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -61,6 +81,26 @@ function isHistoryResponse(value: unknown): value is StockHistoryResponse {
         (key) => typeof point[key] === "number" && Number.isFinite(point[key]),
       ),
     );
+}
+
+function isEarningsEvent(value: unknown): value is EarningsEvent {
+  return isRecord(value) &&
+    typeof value.symbol === "string" &&
+    typeof value.reportDate === "string" &&
+    (value.estimate === null || (typeof value.estimate === "number" && Number.isFinite(value.estimate))) &&
+    (value.timeOfDay === "pre-market" ||
+      value.timeOfDay === "post-market" ||
+      value.timeOfDay === "during-market" ||
+      value.timeOfDay === "unknown");
+}
+
+function isEarningsCalendarResponse(value: unknown): value is EarningsCalendarResponse {
+  return isRecord(value) &&
+    typeof value.ticker === "string" &&
+    value.horizon === "6month" &&
+    typeof value.updatedAt === "string" &&
+    Array.isArray(value.events) &&
+    value.events.every(isEarningsEvent);
 }
 
 function responseError(value: unknown): string {
@@ -86,8 +126,43 @@ function volume(value: number) {
   return new Intl.NumberFormat("ja-JP", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
+function earningsTiming(value: EarningsTimeOfDay) {
+  if (value === "pre-market") return "市場前";
+  if (value === "post-market") return "市場後";
+  if (value === "during-market") return "市場中";
+  return "時刻未定";
+}
+
+function addCalendarDays(date: string, days: number) {
+  const result = new Date(`${date}T00:00:00Z`);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result.toISOString().slice(0, 10);
+}
+
+function businessDatesAfter(startDate: string, endDate: string) {
+  const dates: string[] = [];
+  const cursor = new Date(`${startDate}T00:00:00Z`);
+  const end = new Date(`${endDate}T00:00:00Z`);
+  cursor.setUTCDate(cursor.getUTCDate() + 1);
+
+  while (cursor <= end) {
+    const day = cursor.getUTCDay();
+    if (day !== 0 && day !== 6) dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return dates;
+}
+
 function CandlestickShape({ x, y, width, height, payload }: BarShapeProps) {
-  const point = payload as CandlestickPoint;
+  const point = payload as ChartPoint;
+  if (
+    point.open === null ||
+    point.high === null ||
+    point.low === null ||
+    point.close === null ||
+    point.priceRange === null
+  ) return <g aria-hidden="true" />;
   const rising = point.close >= point.open;
   const color = rising ? "#34d399" : "#fb7185";
   const centerX = x + width / 2;
@@ -117,8 +192,8 @@ function CandlestickShape({ x, y, width, height, payload }: BarShapeProps) {
 
 function CandlestickTooltip({ active, payload, label }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
-  const point = payload[0]?.payload as CandlestickPoint | undefined;
-  if (!point) return null;
+  const point = payload[0]?.payload as ChartPoint | undefined;
+  if (!point || point.open === null || point.high === null || point.low === null || point.close === null || point.volume === null) return null;
   const change = point.close - point.open;
 
   return (
@@ -141,6 +216,8 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const requestId = useRef(0);
+  const earningsRequestId = useRef(0);
+  const [earningsState, setEarningsState] = useState<EarningsState | null>(null);
   const cardRef = useRef<HTMLElement>(null);
   const ticker = item.ticker.trim().toUpperCase();
 
@@ -186,12 +263,85 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
     return () => controller.abort();
   }, [range, ticker]);
 
+  useEffect(() => {
+    const cached = earningsCache.get(ticker);
+    if (cached) {
+      const timeout = window.setTimeout(() => {
+        setEarningsState({ ticker, data: cached, error: "" });
+      }, 0);
+      return () => window.clearTimeout(timeout);
+    }
+
+    const currentRequest = ++earningsRequestId.current;
+    const controller = new AbortController();
+    const load = async () => {
+      try {
+        const response = await fetch(`/api/earnings-calendar?ticker=${encodeURIComponent(ticker)}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const value: unknown = await response.json();
+        if (!response.ok) throw new Error(responseError(value));
+        if (!isEarningsCalendarResponse(value)) throw new Error("決算カレンダーの形式が不正です。");
+        earningsCache.set(ticker, value);
+        if (earningsRequestId.current === currentRequest) {
+          setEarningsState({ ticker, data: value, error: "" });
+        }
+      } catch (caught: unknown) {
+        if (caught instanceof DOMException && caught.name === "AbortError") return;
+        if (earningsRequestId.current === currentRequest) {
+          setEarningsState({
+            ticker,
+            data: null,
+            error: caught instanceof Error ? caught.message : "決算予定を取得できませんでした。",
+          });
+        }
+      }
+    };
+    void load();
+    return () => controller.abort();
+  }, [ticker]);
+
   const startingPrice = positivePrice(item.startingPrice);
   const targetPrice = positivePrice(item.targetPrice);
-  const chartPoints: CandlestickPoint[] = data?.points.map((point) => ({
+  const activeEarnings = earningsState?.ticker === ticker ? earningsState.data : null;
+  const earningsError = earningsState?.ticker === ticker ? earningsState.error : "";
+  const earningsLoading = earningsState?.ticker !== ticker;
+  const latestHistoryDate = data?.points.at(-1)?.date ?? null;
+  const earningsRangeEnd = latestHistoryDate
+    ? addCalendarDays(latestHistoryDate, RANGE_CALENDAR_DAYS[range])
+    : null;
+  const visibleEarnings = activeEarnings && latestHistoryDate && earningsRangeEnd
+    ? activeEarnings.events.filter(
+        (event) => event.reportDate >= latestHistoryDate && event.reportDate <= earningsRangeEnd,
+      )
+    : [];
+  const nextEarnings = activeEarnings?.events[0] ?? null;
+  const chartPoints: ChartPoint[] = data?.points.map((point) => ({
     ...point,
     priceRange: [point.low, point.high],
   })) ?? [];
+  if (latestHistoryDate && visibleEarnings.length > 0) {
+    const lastEventDate = visibleEarnings.at(-1)?.reportDate ?? latestHistoryDate;
+    const axisEndDate = addCalendarDays(lastEventDate, 3);
+    const chartDates = new Set(chartPoints.map((point) => point.date));
+    const futureDates = businessDatesAfter(latestHistoryDate, axisEndDate);
+    for (const event of visibleEarnings) futureDates.push(event.reportDate);
+
+    for (const date of Array.from(new Set(futureDates)).sort()) {
+      if (chartDates.has(date)) continue;
+      chartPoints.push({
+        date,
+        open: null,
+        high: null,
+        low: null,
+        close: null,
+        volume: null,
+        priceRange: null,
+      });
+    }
+    chartPoints.sort((left, right) => left.date.localeCompare(right.date));
+  }
   const visibleTradeMarkers = data
     ? tradeMarkers.filter((marker) => data.points.some((point) => point.date === marker.date))
     : [];
@@ -240,6 +390,16 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
                   {startingPrice !== null && <ReferenceLine y={startingPrice} stroke="#f59e0b" strokeDasharray="5 4" label={{ value: context === "journal" ? "取得単価" : "監視開始", fill: "#fbbf24", fontSize: 11, position: "insideTopRight" }} />}
                   {context === "watchlist" && targetPrice !== null && <ReferenceLine y={targetPrice} stroke="#34d399" strokeDasharray="5 4" label={{ value: "希望価格", fill: "#6ee7b7", fontSize: 11, position: "insideBottomRight" }} />}
                   {currentPrice !== null && <ReferenceLine y={currentPrice} stroke="#a78bfa" strokeDasharray="5 4" label={{ value: "現在価格", fill: "#c4b5fd", fontSize: 11, position: "insideTopLeft" }} />}
+                  {visibleEarnings.map((event) => (
+                    <ReferenceLine
+                      key={`earnings-price-${event.reportDate}`}
+                      x={event.reportDate}
+                      stroke="#f59e0b"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.5}
+                      label={{ value: "E 決算", fill: "#fbbf24", fontSize: 11, fontWeight: 700, position: "insideTopLeft" }}
+                    />
+                  ))}
                   <Bar dataKey="priceRange" name="値幅" shape={CandlestickShape} isAnimationActive={false} />
                   {visibleTradeMarkers.map((marker) => (
                     <ReferenceDot
@@ -269,8 +429,17 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
                   <XAxis dataKey="date" stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(date: string) => date.slice(5).replace("-", "/")} minTickGap={28} />
                   <YAxis stroke="#64748b" tick={{ fill: "#64748b", fontSize: 10 }} tickFormatter={volume} width={58} tickCount={3} />
                   <Tooltip cursor={{ fill: "#334155", fillOpacity: 0.25 }} contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 12, color: "#f8fafc" }} labelFormatter={(label) => `日付：${String(label)}`} formatter={(value) => [volume(Number(value)), "出来高"]} />
+                  {visibleEarnings.map((event) => (
+                    <ReferenceLine
+                      key={`earnings-volume-${event.reportDate}`}
+                      x={event.reportDate}
+                      stroke="#f59e0b"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.5}
+                    />
+                  ))}
                   <Bar dataKey="volume" name="出来高" isAnimationActive={false}>
-                    {chartPoints.map((point) => <Cell key={point.date} fill={point.close >= point.open ? "#34d399" : "#fb7185"} fillOpacity={0.55} />)}
+                    {chartPoints.map((point) => <Cell key={point.date} fill={point.close === null || point.open === null ? "transparent" : point.close >= point.open ? "#34d399" : "#fb7185"} fillOpacity={0.55} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -284,9 +453,26 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
         <span className="inline-flex items-center gap-2"><span className="h-3 w-2 border border-rose-400 bg-rose-400" />下落</span>
         <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full border-2 border-emerald-950 bg-emerald-400" />買い・買戻し</span>
         <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full border-2 border-rose-950 bg-rose-400" />売り・決済</span>
+        <span className="inline-flex items-center gap-2"><span className="h-4 border-l-2 border-dashed border-amber-400" />決算</span>
         {tradeMarkers.length === 0 && <span>この銘柄の売買記録はまだありません</span>}
         {tradeMarkers.length > 0 && visibleTradeMarkers.length === 0 && <span>選択期間内に売買記録はありません</span>}
+        {earningsLoading && <span>決算予定を確認中…</span>}
+        {!earningsLoading && earningsError && <span className="text-amber-300">{earningsError}</span>}
+        {!earningsLoading && !earningsError && activeEarnings?.events.length === 0 && <span>次回決算日は未定です</span>}
+        {!earningsLoading && !earningsError && nextEarnings && visibleEarnings.length === 0 && (
+          <span>次回決算 {nextEarnings.reportDate}（{earningsTiming(nextEarnings.timeOfDay)}）は{RANGE_LABELS[range]}の表示範囲外です</span>
+        )}
       </div>
+
+      {visibleEarnings.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2" aria-label="表示中の決算予定">
+          {visibleEarnings.map((event) => (
+            <span key={`earnings-detail-${event.reportDate}`} className="rounded-full border border-amber-400/25 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-200">
+              {event.reportDate} 決算（{earningsTiming(event.timeOfDay)}）
+            </span>
+          ))}
+        </div>
+      )}
 
       {visibleTradeMarkers.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2" aria-label="表示中の売買記録">
