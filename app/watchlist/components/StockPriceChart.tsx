@@ -354,24 +354,24 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
   };
 
   return (
-    <section ref={cardRef} id="stock-price-chart" aria-labelledby="chart-title" className="ios-card scroll-mt-6 rounded-2xl p-5 sm:p-7">
+    <section ref={cardRef} id="stock-price-chart" aria-labelledby="chart-title" className="ios-card w-full min-w-0 max-w-full scroll-mt-6 rounded-2xl p-4 sm:p-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sky-400">PRICE HISTORY</p>
-          <h2 id="chart-title" className="mt-1 text-xl font-semibold text-white">{ticker} 株価チャート</h2>
+          <h2 id="chart-title" className="mt-1 break-words text-xl font-semibold text-white">{ticker} 株価チャート</h2>
         </div>
         {onClose && <button type="button" onClick={onClose} className="min-h-10 border border-slate-700 px-4 text-sm text-slate-300 hover:bg-slate-800">閉じる</button>}
       </div>
 
-      <div className="mt-5 flex gap-2" aria-label="チャート期間">
+      <div className="mt-5 grid w-full min-w-0 grid-cols-3 gap-2 sm:flex sm:w-auto" aria-label="チャート期間">
         {(Object.keys(RANGE_LABELS) as StockHistoryRange[]).map((option) => (
-          <button key={option} type="button" onClick={() => changeRange(option)} disabled={loading || range === option} aria-pressed={range === option} className={`min-h-10 px-4 text-sm font-semibold transition disabled:cursor-wait ${range === option ? "bg-sky-600 text-white" : "border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-60"}`}>
+          <button key={option} type="button" onClick={() => changeRange(option)} disabled={loading || range === option} aria-pressed={range === option} className={`min-h-10 min-w-0 px-2 text-sm font-semibold transition disabled:cursor-wait sm:px-4 ${range === option ? "bg-sky-600 text-white" : "border border-slate-700 text-slate-300 hover:bg-slate-800 disabled:opacity-60"}`}>
             {RANGE_LABELS[option]}
           </button>
         ))}
       </div>
 
-      <div className="mt-6 min-h-[390px] sm:min-h-[470px]" aria-live="polite" aria-busy={loading}>
+      <div className="mt-6 w-full min-w-0 max-w-full min-h-[390px] sm:min-h-[470px]" aria-live="polite" aria-busy={loading}>
         {loading ? (
           <div className="flex h-[390px] items-center justify-center text-slate-400 sm:h-[470px]">チャートを読み込み中…</div>
         ) : error ? (
@@ -379,13 +379,13 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
         ) : !data || data.points.length === 0 ? (
           <div className="flex h-[390px] items-center justify-center text-slate-400 sm:h-[470px]">チャートデータがありません</div>
         ) : (
-          <div>
-            <div className="h-[300px] sm:h-[370px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartPoints} margin={{ top: 16, right: 18, left: 4, bottom: 0 }} barCategoryGap="12%">
+          <div className="w-full min-w-0 max-w-full">
+            <div className="h-[300px] w-full min-w-0 max-w-full sm:h-[370px]">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <ComposedChart data={chartPoints} margin={{ top: 16, right: 4, left: 0, bottom: 0 }} barCategoryGap="12%">
                   <CartesianGrid stroke="#334155" strokeOpacity={0.35} strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="date" hide />
-                  <YAxis domain={["auto", "auto"]} stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(value: number) => `$${value.toFixed(0)}`} width={58} />
+                  <YAxis domain={["auto", "auto"]} stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(value: number) => `$${value.toFixed(0)}`} width={48} />
                   <Tooltip cursor={{ stroke: "#64748b", strokeDasharray: "3 3" }} content={CandlestickTooltip} />
                   {startingPrice !== null && <ReferenceLine y={startingPrice} stroke="#f59e0b" strokeDasharray="5 4" label={{ value: context === "journal" ? "取得単価" : "監視開始", fill: "#fbbf24", fontSize: 11, position: "insideTopRight" }} />}
                   {context === "watchlist" && targetPrice !== null && <ReferenceLine y={targetPrice} stroke="#34d399" strokeDasharray="5 4" label={{ value: "希望価格", fill: "#6ee7b7", fontSize: 11, position: "insideBottomRight" }} />}
@@ -422,12 +422,12 @@ export default function StockPriceChart({ item, currentPrice, tradeMarkers, onCl
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-1 h-[90px] border-t border-slate-800/80 pt-1 sm:h-[100px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartPoints} margin={{ top: 4, right: 18, left: 4, bottom: 0 }} barCategoryGap="12%">
+            <div className="mt-1 h-[90px] w-full min-w-0 max-w-full border-t border-slate-800/80 pt-1 sm:h-[100px]">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                <BarChart data={chartPoints} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap="12%">
                   <CartesianGrid stroke="#334155" strokeOpacity={0.2} strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="date" stroke="#64748b" tick={{ fill: "#94a3b8", fontSize: 11 }} tickFormatter={(date: string) => date.slice(5).replace("-", "/")} minTickGap={28} />
-                  <YAxis stroke="#64748b" tick={{ fill: "#64748b", fontSize: 10 }} tickFormatter={volume} width={58} tickCount={3} />
+                  <YAxis stroke="#64748b" tick={{ fill: "#64748b", fontSize: 10 }} tickFormatter={volume} width={48} tickCount={3} />
                   <Tooltip cursor={{ fill: "#334155", fillOpacity: 0.25 }} contentStyle={{ background: "#020617", border: "1px solid #334155", borderRadius: 12, color: "#f8fafc" }} labelFormatter={(label) => `日付：${String(label)}`} formatter={(value) => [volume(Number(value)), "出来高"]} />
                   {visibleEarnings.map((event) => (
                     <ReferenceLine

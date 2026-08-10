@@ -17,15 +17,21 @@ html,
 body,
 #app-root {
   min-height: 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   background-color: #060b16;
 }
 
 html {
   background: #060b16 !important;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
 }
 
 body {
   margin: 0;
+  overflow-x: clip;
   background: #060b16 !important;
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
@@ -34,17 +40,34 @@ body {
 #app-root {
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: clip;
   background: #060b16;
+}
+
+@supports not (overflow: clip) {
+  html,
+  body,
+  #app-root {
+    overflow-x: hidden;
+  }
 }
 
 .ios-app {
   min-height: 100vh;
   min-height: 100dvh;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   background:
     radial-gradient(circle at 50% -12%, rgba(37, 99, 235, .16), transparent 32rem),
     #060b16;
   color: #f8fafc;
+  overflow-wrap: anywhere;
   padding-bottom: max(2.5rem, env(safe-area-inset-bottom));
+}
+
+.ios-app > * {
+  min-width: 0;
 }
 
 .ios-hero {
@@ -67,6 +90,8 @@ body {
 .ios-hero > p:first-child { opacity: .72; }
 
 .ios-card, .ios-stat {
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid rgba(148, 163, 184, .12);
   background: rgba(17, 24, 39, .9);
   box-shadow: 0 18px 48px rgba(0, 0, 0, .22);
@@ -106,7 +131,7 @@ body {
   main input:not([type="checkbox"]),
   main select,
   main textarea {
-    @apply mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20;
+    @apply mt-1.5 w-full min-w-0 max-w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20;
   }
 
   main textarea {
@@ -120,6 +145,7 @@ body {
 
 .react-calendar {
   width: 100%;
+  min-width: 0;
   max-width: 42rem;
   border: 0;
   border-radius: 1rem;

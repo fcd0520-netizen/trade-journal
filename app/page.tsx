@@ -420,9 +420,9 @@ export default function Home() {
   };
 
   return (
-    <main className="ios-app min-h-screen bg-[#060b16] px-4 py-20 sm:px-6 sm:py-12 lg:pl-[calc(16rem+1.5rem)]">
+    <main className="ios-app min-h-screen w-full min-w-0 max-w-full bg-[#060b16] px-4 py-20 sm:px-6 sm:py-12 lg:pl-[calc(16rem+1.5rem)]">
       <Sidebar />
-      <div className="mx-auto max-w-6xl space-y-7 sm:space-y-9">
+      <div className="mx-auto w-full min-w-0 max-w-6xl space-y-7 sm:space-y-9">
         <section className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">Decision Performance</p>
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Trade Journal</h1>

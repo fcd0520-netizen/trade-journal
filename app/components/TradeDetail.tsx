@@ -77,7 +77,7 @@ export default function TradeDetail({ journal, onBack, onEdit, onSettlement }: T
   };
 
   return (
-    <article aria-labelledby="trade-detail-title">
+    <article aria-labelledby="trade-detail-title" className="w-full min-w-0 max-w-full">
       <div className="flex items-center justify-between gap-3">
         <button type="button" onClick={onBack} className="min-h-11 rounded-xl border border-slate-700 bg-slate-900/70 px-3.5 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800">← 一覧へ戻る</button>
         <button type="button" onClick={() => onEdit(journal)} className="min-h-11 rounded-xl border border-blue-400/25 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300 hover:bg-blue-500/20">編集</button>

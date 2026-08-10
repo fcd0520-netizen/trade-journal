@@ -88,9 +88,9 @@ export default function PaperTradePage() {
   };
 
   return (
-    <main className="ios-app min-h-screen px-4 py-10 sm:px-6 lg:pl-[calc(16rem+1.5rem)]">
+    <main className="ios-app min-h-screen w-full min-w-0 max-w-full px-4 py-10 sm:px-6 lg:pl-[calc(16rem+1.5rem)]">
       <Sidebar />
-      <div className="mx-auto max-w-5xl space-y-7">
+      <div className="mx-auto w-full min-w-0 max-w-5xl space-y-7">
         <header className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
           <Link href="/" className="relative z-10 text-sm font-semibold text-blue-200 hover:text-white">← Dashboardへ戻る</Link>
           <p className="relative z-10 mt-6 text-xs font-semibold uppercase tracking-[0.22em] text-sky-400">Simulation</p>

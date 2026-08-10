@@ -127,7 +127,7 @@ export default function Sidebar() {
         {navigation}
       </aside>
 
-      <div className={`fixed inset-0 z-50 lg:hidden ${isOpen ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!isOpen}>
+      <div className={`fixed inset-0 z-50 overflow-hidden lg:hidden ${isOpen ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!isOpen}>
         <button
           type="button"
           onClick={() => setIsOpen(false)}
@@ -138,7 +138,7 @@ export default function Sidebar() {
         <aside
           id="mobile-sidebar"
           aria-label="モバイルメニュー"
-          className={`absolute inset-y-0 left-0 w-[min(82vw,20rem)] border-r border-slate-800 bg-[#080e1b] px-5 py-6 shadow-2xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`absolute inset-y-0 left-0 w-[min(82vw,20rem)] max-w-full border-r border-slate-800 bg-[#080e1b] px-5 py-6 shadow-2xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <div className="flex items-center justify-between gap-4">
             <div>
