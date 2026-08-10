@@ -66,7 +66,7 @@ export default function PaperTradeQuickForm() {
           リセット
         </button>
       </div>
-      <div className="mt-6 grid gap-5 sm:grid-cols-2">
+      <div className="mt-6 grid min-w-0 grid-cols-2 gap-x-3 gap-y-4 sm:gap-5 [&>div]:min-w-0">
         <div><label htmlFor="quick-paper-ticker">ティッカー</label><input id="quick-paper-ticker" value={form.ticker} onChange={(e) => update("ticker", e.target.value)} placeholder="AAPL" /></div>
         <div><label htmlFor="quick-paper-company">銘柄名</label><input id="quick-paper-company" value={form.companyName} onChange={(e) => update("companyName", e.target.value)} placeholder="Apple" /></div>
         <div><label htmlFor="quick-paper-side">買い／売り</label><select id="quick-paper-side" value={form.side} onChange={(e) => update("side", e.target.value as "買い" | "売り")}><option>買い</option><option>売り</option></select></div>
@@ -74,10 +74,10 @@ export default function PaperTradeQuickForm() {
         <div><label htmlFor="quick-paper-price">取得単価</label><input id="quick-paper-price" type="number" min="0" step="0.01" inputMode="decimal" value={form.acquisitionPrice} onChange={(e) => update("acquisitionPrice", e.target.value)} /></div>
         <div><label htmlFor="quick-paper-emotion">感情</label><select id="quick-paper-emotion" value={form.emotion} onChange={(e) => update("emotion", e.target.value)}><option>冷静</option><option>様子見</option><option>飛びつき</option><option>不安</option><option>自信あり</option><option>リベンジ</option></select></div>
         <div><label htmlFor="quick-paper-result">結果</label><select id="quick-paper-result" value={form.result} onChange={(e) => update("result", e.target.value)}><option>未確定</option><option>勝ち</option><option>負け</option><option>引き分け</option></select></div>
-        <div className="sm:col-span-2"><label htmlFor="quick-paper-reason">理由</label><textarea id="quick-paper-reason" rows={3} value={form.reason} onChange={(e) => update("reason", e.target.value)} /></div>
-        <div className="sm:col-span-2"><label htmlFor="quick-paper-memo">メモ</label><textarea id="quick-paper-memo" rows={3} value={form.memo} onChange={(e) => update("memo", e.target.value)} /></div>
-        <div className="sm:col-span-2"><button type="button" onClick={save} className="min-h-11 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500">保存</button></div>
-        {message && <p role="status" aria-live="polite" className={`rounded-xl border p-3 text-sm sm:col-span-2 ${isError ? "border-rose-500/20 bg-rose-500/10 text-rose-300" : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"}`}>{message}</p>}
+        <div className="col-span-2"><label htmlFor="quick-paper-reason">理由</label><textarea id="quick-paper-reason" rows={3} value={form.reason} onChange={(e) => update("reason", e.target.value)} /></div>
+        <div className="col-span-2"><label htmlFor="quick-paper-memo">メモ</label><textarea id="quick-paper-memo" rows={3} value={form.memo} onChange={(e) => update("memo", e.target.value)} /></div>
+        <div className="col-span-2"><button type="button" onClick={save} className="min-h-11 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500">保存</button></div>
+        {message && <p role="status" aria-live="polite" className={`col-span-2 rounded-xl border p-3 text-sm ${isError ? "border-rose-500/20 bg-rose-500/10 text-rose-300" : "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"}`}>{message}</p>}
       </div>
     </div>
   );

@@ -284,3 +284,22 @@ npm run dev
 - 320px・360px・390pxで3セクションの2列・全幅配置を実ブラウザで確認
 - 長いURL、桁数の多い数量・金額を含む状態でも横スクロールなし、Trade Detail内の画面外要素0件を確認
 - コンソールエラー・Next.jsエラー画面ともに0件
+
+### Watchlist・Paper Trade入力フォームのスマホ最適化
+
+### 変更内容
+
+- WatchlistQuickFormとPaperTradeQuickFormの短い入力・選択項目をスマホでも2列表示に変更
+- Watchlistの監視理由、Paper Tradeの理由・メモを2列分の全幅表示に変更
+- 保存ボタンと保存結果メッセージを2列分の全幅領域へ配置
+- モバイルの列間隔を調整し、各グリッドと項目へ幅制約を追加して横はみ出しを防止
+- WatchlistはPCの3列表示、Paper TradeはPCの2列表示を維持
+
+### 検証
+
+- npm run lint 成功
+- npm run build 成功
+- 320px・360px・390pxで両フォームの2列・全幅配置を実ブラウザで確認
+- 長いURLを理由欄へ入力して保存した後も横スクロールなし、フォーム内の画面外要素0件を確認
+- WatchlistとPaper TradeのlocalStorage保存を確認
+- コンソールエラー・Next.jsエラー画面ともに0件
