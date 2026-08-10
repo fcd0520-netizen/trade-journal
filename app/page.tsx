@@ -438,7 +438,7 @@ export default function Home() {
 
         <Analytics journals={activeJournals} />
 
-        <section id="new-entry" className="ios-card scroll-mt-8 rounded-2xl p-5 sm:p-7">
+        <section id="new-entry" className="ios-card scroll-mt-8 rounded-2xl p-4 sm:p-7">
           <div role="tablist" aria-label="追加する記録の種類" className="mb-6 grid grid-cols-3 gap-1 rounded-xl border border-slate-800 bg-slate-950/70 p-1 sm:gap-2">
             {([
               ["trade", "取引記録"],
@@ -512,222 +512,170 @@ export default function Home() {
             </p>
           )}
 
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="block font-medium">種別</label>
+          <div className="mt-6 space-y-7">
+            <section aria-labelledby="basic-information-heading">
+              <div className="flex items-center gap-3 border-b border-slate-800 pb-2.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-xs font-semibold text-blue-300">1</span>
+                <h3 id="basic-information-heading" className="text-sm font-semibold text-slate-100">基本情報</h3>
+              </div>
 
-              <select
-                className="mt-1 w-full rounded border p-2"
-                value={category}
-                onChange={(e) => setCategory(e.target.value as TradeCategory)}
-              >
-                <option>株式</option>
-                <option>FX</option>
-              </select>
-            </div>
+              <div className="mt-4 grid min-w-0 grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-5">
+                <div className="min-w-0">
+                  <label htmlFor="trade-category" className="block font-medium">種別</label>
+                  <select id="trade-category" value={category} onChange={(e) => setCategory(e.target.value as TradeCategory)}>
+                    <option>株式</option>
+                    <option>FX</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="block font-medium">日付</label>
+                <div className="min-w-0">
+                  <label htmlFor="trade-date" className="block font-medium">日付</label>
+                  <input id="trade-date" type="date" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} />
+                </div>
 
-              <input
-                type="date"
-                className="mt-1 w-full rounded border p-2"
-                value={tradeDate}
-                onChange={(e) => setTradeDate(e.target.value)}
-              />
-            </div>
+                <div className="col-span-2 min-w-0">
+                  <label htmlFor="trade-target" className="block font-medium">対象</label>
+                  <input id="trade-target" placeholder="例：TEAM、MSFT、USD/JPY" value={target} onChange={(e) => setTarget(e.target.value)} />
+                </div>
 
-            <div>
-              <label className="block font-medium">対象</label>
+                <div className="min-w-0">
+                  <label htmlFor="share-count" className="block font-medium">株数</label>
+                  <input id="share-count" type="number" inputMode="decimal" min="0" step="any" placeholder="15" value={shareCount} onChange={(e) => setShareCount(e.target.value)} />
+                </div>
 
-              <input
-                className="mt-1 w-full rounded border p-2"
-                placeholder="例：TEAM、MSFT、USD/JPY"
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-              />
-            </div>
+                <div className="min-w-0">
+                  <label htmlFor="acquisition-price" className="block font-medium">取得単価</label>
+                  <input id="acquisition-price" type="number" inputMode="decimal" min="0" step="0.01" placeholder="70.20" value={acquisitionPrice} onChange={(e) => setAcquisitionPrice(e.target.value)} />
+                </div>
 
-            <div>
-              <label className="block font-medium">市場環境</label>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-400">表示通貨</p>
+                  <p className="mt-1.5 flex min-h-11 items-center rounded-xl border border-slate-700 bg-slate-950/60 px-3 text-sm text-slate-200">USD</p>
+                </div>
 
-              <select
-                className="mt-1 w-full rounded border p-2"
-                value={marketEnvironment}
-                onChange={(e) => setMarketEnvironment(e.target.value)}
-              >
-                <option>未選択</option>
-                <option>強気相場</option>
-                <option>弱気相場</option>
-                <option>暴落</option>
-                <option>高ボラティリティ</option>
-                <option>レンジ相場</option>
-              </select>
-            </div>
+                <div className="min-w-0 rounded-xl border border-blue-400/20 bg-blue-500/10 px-3 py-2">
+                  <p className="text-xs font-medium text-slate-400">投資額</p>
+                  <p className="mt-1 break-words text-base font-semibold text-blue-200 sm:text-xl">{formatUsd(calculateInvestment(shareCount, acquisitionPrice)) ?? "—"}</p>
+                </div>
+              </div>
+            </section>
 
-            <div>
-              <label className="block font-medium">市場テーマ</label>
+            <section aria-labelledby="market-psychology-heading">
+              <div className="flex items-center gap-3 border-b border-slate-800 pb-2.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-xs font-semibold text-violet-300">2</span>
+                <h3 id="market-psychology-heading" className="text-sm font-semibold text-slate-100">市場・心理</h3>
+              </div>
 
-              <select
-                className="mt-1 w-full rounded border p-2"
-                value={marketTheme}
-                onChange={(e) => setMarketTheme(e.target.value)}
-              >
-                <option>未選択</option>
-                <option>AI</option>
-                <option>半導体</option>
-                <option>SaaS</option>
-                <option>IPO</option>
-                <option>宇宙</option>
-                <option>防衛</option>
-                <option>バイオ</option>
-                <option>高配当</option>
-                <option>エネルギー</option>
-                <option>その他</option>
-              </select>
-            </div>
+              <div className="mt-4 grid min-w-0 grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-5">
+                <div className="min-w-0">
+                  <label htmlFor="market-environment" className="block font-medium">市場環境</label>
+                  <select id="market-environment" value={marketEnvironment} onChange={(e) => setMarketEnvironment(e.target.value)}>
+                    <option>未選択</option>
+                    <option>強気相場</option>
+                    <option>弱気相場</option>
+                    <option>暴落</option>
+                    <option>高ボラティリティ</option>
+                    <option>レンジ相場</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="block font-medium">重要イベント</label>
+                <div className="min-w-0">
+                  <label htmlFor="market-theme" className="block font-medium">市場テーマ</label>
+                  <select id="market-theme" value={marketTheme} onChange={(e) => setMarketTheme(e.target.value)}>
+                    <option>未選択</option>
+                    <option>AI</option>
+                    <option>半導体</option>
+                    <option>SaaS</option>
+                    <option>IPO</option>
+                    <option>宇宙</option>
+                    <option>防衛</option>
+                    <option>バイオ</option>
+                    <option>高配当</option>
+                    <option>エネルギー</option>
+                    <option>その他</option>
+                  </select>
+                </div>
 
-              <select
-                className="mt-1 w-full rounded border p-2"
-                value={majorEvent}
-                onChange={(e) => setMajorEvent(e.target.value)}
-              >
-                <option>未選択</option>
-                <option>FOMC</option>
-                <option>日銀会合</option>
-                <option>CPI</option>
-                <option>雇用統計</option>
-                <option>決算</option>
-                <option>選挙</option>
-                <option>その他</option>
-              </select>
-            </div>
+                <div className="min-w-0">
+                  <label htmlFor="major-event" className="block font-medium">重要イベント</label>
+                  <select id="major-event" value={majorEvent} onChange={(e) => setMajorEvent(e.target.value)}>
+                    <option>未選択</option>
+                    <option>FOMC</option>
+                    <option>日銀会合</option>
+                    <option>CPI</option>
+                    <option>雇用統計</option>
+                    <option>決算</option>
+                    <option>選挙</option>
+                    <option>その他</option>
+                  </select>
+                </div>
 
-            <div>
-              <label className="block font-medium">表示通貨</label>
-              <p className="mt-1 rounded border border-slate-700 bg-slate-950/60 p-2 text-slate-200">USD</p>
-            </div>
+                <div className="min-w-0">
+                  <label htmlFor="trade-emotion" className="block font-medium">心理状態</label>
+                  <select id="trade-emotion" value={emotion} onChange={(e) => setEmotion(e.target.value)}>
+                    <option>冷静</option>
+                    <option>様子見</option>
+                    <option>飛びつき</option>
+                    <option>不安</option>
+                    <option>自信あり</option>
+                    <option>リベンジ</option>
+                  </select>
+                </div>
+              </div>
+            </section>
 
-            <div>
-              <label className="block font-medium">株数</label>
-              <input type="number" inputMode="decimal" min="0" step="any" placeholder="15" value={shareCount} onChange={(e) => setShareCount(e.target.value)} />
-            </div>
+            <section aria-labelledby="judgment-review-heading">
+              <div className="flex items-center gap-3 border-b border-slate-800 pb-2.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-xs font-semibold text-emerald-300">3</span>
+                <h3 id="judgment-review-heading" className="text-sm font-semibold text-slate-100">判断・振り返り</h3>
+              </div>
 
-            <div>
-              <label className="block font-medium">取得単価</label>
-              <input type="number" inputMode="decimal" min="0" step="0.01" placeholder="70.20" value={acquisitionPrice} onChange={(e) => setAcquisitionPrice(e.target.value)} />
-            </div>
+              <div className="mt-4 grid min-w-0 grid-cols-2 gap-x-3 gap-y-4 sm:gap-x-5">
+                <div className="min-w-0">
+                  <label htmlFor="entry-direction" className="block font-medium">方向</label>
+                  <select id="entry-direction" value={decision} onChange={(e) => setDecision(e.target.value as EntryDirection)}>
+                    <option>Buy</option>
+                    <option>Sell</option>
+                  </select>
+                </div>
 
-            <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 px-4 py-3">
-              <p className="text-xs font-medium text-slate-400">投資額（株数 × 取得単価）</p>
-              <p className="mt-1 text-xl font-semibold text-blue-200">{formatUsd(calculateInvestment(shareCount, acquisitionPrice)) ?? "—"}</p>
-            </div>
+                <div className="flex min-h-11 min-w-0 items-center gap-2 self-end rounded-xl border border-slate-700 bg-slate-950/60 px-3">
+                  <input id="rule-followed" className="h-4 w-4 shrink-0 accent-sky-500" type="checkbox" checked={ruleFollowed} onChange={(e) => setRuleFollowed(e.target.checked)} />
+                  <label htmlFor="rule-followed" className="text-xs font-medium leading-tight text-slate-300 sm:text-sm">ルールを守れた</label>
+                </div>
 
-            <div>
-              <label className="block font-medium">損益（USD）</label>
+                <div className="col-span-2 min-w-0">
+                  <label htmlFor="trade-reason" className="block font-medium">理由</label>
+                  <textarea id="trade-reason" rows={3} placeholder="なぜその判断をしたか" value={reason} onChange={(e) => setReason(e.target.value)} />
+                </div>
 
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                className="mt-1 w-full rounded border p-2"
-                placeholder="利益 120.80 / 損失 -35.50"
-                value={profit}
-                onChange={(e) => setProfit(e.target.value)}
-              />
-            </div>
+                <div className="min-w-0">
+                  <label htmlFor="trade-profit" className="block font-medium">損益（USD）</label>
+                  <input id="trade-profit" type="number" inputMode="decimal" step="0.01" placeholder="120.80 / -35.50" value={profit} onChange={(e) => setProfit(e.target.value)} />
+                </div>
 
-            <div>
-              <label className="block font-medium">勝敗</label>
+                <div className="min-w-0">
+                  <label htmlFor="trade-result" className="block font-medium">勝敗</label>
+                  <select id="trade-result" value={result} onChange={(e) => setResult(e.target.value)}>
+                    <option>未確定</option>
+                    <option>勝ち</option>
+                    <option>負け</option>
+                    <option>引き分け</option>
+                  </select>
+                </div>
 
-              <select
-                className="mt-1 w-full rounded border p-2"
-                value={result}
-                onChange={(e) => setResult(e.target.value)}
-              >
-                <option>未確定</option>
-                <option>勝ち</option>
-                <option>負け</option>
-                <option>引き分け</option>
-              </select>
-            </div>
+                <div className="col-span-2 min-w-0">
+                  <label htmlFor="trade-review" className="block font-medium">振り返り</label>
+                  <textarea id="trade-review" rows={3} placeholder="例：利確、損切り、見送りで正解など" value={review} onChange={(e) => setReview(e.target.value)} />
+                </div>
+              </div>
+            </section>
 
-            <div className="flex min-h-11 items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/60 px-3">
-              <input
-                id="rule-followed"
-                className="h-4 w-4 accent-sky-500"
-                type="checkbox"
-                checked={ruleFollowed}
-                onChange={(e) => setRuleFollowed(e.target.checked)}
-              />
-
-              <label htmlFor="rule-followed" className="text-sm font-medium text-slate-300">
-                ルールを守れた
-              </label>
-            </div>
-
-            <div>
-              <label className="block font-medium">エントリー方向</label>
-
-              <select
-                className="mt-1 w-full rounded border p-2"
-                value={decision}
-                onChange={(e) => setDecision(e.target.value as EntryDirection)}
-              >
-                <option>Buy</option>
-                <option>Sell</option>
-              </select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block font-medium">理由</label>
-
-              <textarea
-                className="mt-1 w-full rounded border p-2"
-                rows={4}
-                placeholder="なぜその判断をしたか"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="block font-medium">心理状態</label>
-
-              <select
-                className="mt-1 w-full rounded border p-2"
-                value={emotion}
-                onChange={(e) => setEmotion(e.target.value)}
-              >
-                <option>冷静</option>
-                <option>様子見</option>
-                <option>飛びつき</option>
-                <option>不安</option>
-                <option>自信あり</option>
-                <option>リベンジ</option>
-              </select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block font-medium">振り返り</label>
-
-              <textarea
-                className="mt-1 w-full rounded border p-2"
-                rows={3}
-                placeholder="例：利確、損切り、見送りで正解など"
-                value={review}
-                onChange={(e) => setReview(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-wrap gap-3 sm:col-span-2">
+            <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={handleSave}
-                className="min-h-11 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900"
+                className="min-h-11 flex-1 rounded-lg bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900 sm:flex-none"
               >
                 {editingId !== null ? "更新する" : "保存"}
               </button>
@@ -744,7 +692,7 @@ export default function Home() {
             </div>
 
             {message && (
-              <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300 sm:col-span-2">{message}</p>
+              <p className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300">{message}</p>
             )}
           </div>
           </div>
