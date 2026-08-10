@@ -17,14 +17,19 @@ type TradeDetailProps = {
   onSettlement: (journalId: number, settlement: Settlement) => void;
 };
 
-type DetailItemProps = { label: string; value: string; valueClassName?: string };
+type DetailItemProps = {
+  label: string;
+  value: string;
+  className?: string;
+  valueClassName?: string;
+};
 
-const DetailItem = ({ label, value, valueClassName = "text-slate-200" }: DetailItemProps) => (
-  <div><dt className="text-xs font-medium tracking-wide text-slate-500">{label}</dt><dd className={`mt-1.5 break-words text-sm font-medium leading-6 sm:text-base ${valueClassName}`}>{value}</dd></div>
+const DetailItem = ({ label, value, className = "", valueClassName = "text-slate-200" }: DetailItemProps) => (
+  <div className={`min-w-0 ${className}`}><dt className="text-xs font-medium tracking-wide text-slate-500">{label}</dt><dd className={`mt-1 break-words text-sm font-medium leading-5 sm:mt-1.5 sm:text-base sm:leading-6 ${valueClassName}`}>{value}</dd></div>
 );
 
 const DetailSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="rounded-2xl border border-slate-800 bg-slate-950/45 p-5 sm:p-6"><h3 className="text-sm font-semibold tracking-wide text-slate-100 sm:text-base">{title}</h3><dl className="mt-4 grid gap-x-8 gap-y-5 sm:grid-cols-2">{children}</dl></section>
+  <section className="min-w-0 rounded-2xl border border-slate-800 bg-slate-950/45 p-4 sm:p-6"><h3 className="text-sm font-semibold tracking-wide text-slate-100 sm:text-base">{title}</h3><dl className="mt-4 grid min-w-0 grid-cols-2 gap-x-4 gap-y-4 sm:gap-x-8 sm:gap-y-5">{children}</dl></section>
 );
 
 const getToday = () => {
@@ -137,25 +142,26 @@ export default function TradeDetail({ journal, onBack, onEdit, onSettlement }: T
         )}
 
         <DetailSection title="取引情報">
-          <DetailItem label="理由" value={journal.reason || "未入力"} />
+          <DetailItem label="理由" value={journal.reason || "未入力"} className="col-span-2" />
           <DetailItem label="感情" value={journal.emotion || "未選択"} />
           <DetailItem label="株数" value={journal.shareCount ? `${journal.shareCount}株` : "未入力"} />
           <DetailItem label="投資額" value={formatCurrency(calculateInvestment(journal.shareCount, journal.acquisitionPrice), journal.currency) ?? "未入力"} />
           <DetailItem label="市場環境" value={journal.marketEnvironment || "未選択"} />
-          <DetailItem label="振り返り" value={journal.review || "未入力"} />
+          <DetailItem label="振り返り" value={journal.review || "未入力"} className="col-span-2" />
         </DetailSection>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-950/45 p-5 sm:p-6">
+        <section className="min-w-0 rounded-2xl border border-slate-800 bg-slate-950/45 p-4 sm:p-6">
           <h3 className="text-base font-semibold text-slate-100">決済履歴</h3>
           {sortedSettlements.length === 0 ? <p className="mt-4 text-sm text-slate-500">決済履歴はありません。</p> : (
             <div className="mt-4 space-y-3">{sortedSettlements.map((item) => (
-              <article key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-                <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <article key={item.id} className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 sm:p-4">
+                <dl className="grid min-w-0 grid-cols-2 gap-x-3 gap-y-3 text-sm sm:gap-x-6 lg:grid-cols-4">
                   <DetailItem label="決済日" value={item.settlementDate} /><DetailItem label="決済数量" value={`${item.quantity}株`} />
                   <DetailItem label="決済単価" value={formatCurrency(item.settlementPrice, journal.currency) ?? String(item.settlementPrice)} />
                   <DetailItem label="確定損益" value={formatProfitCurrency(item.realizedProfit, journal.currency) ?? String(item.realizedProfit)} valueClassName={profitClass(item.realizedProfit)} />
-                  <DetailItem label="決済理由" value={item.reason || "未入力"} /><DetailItem label="感情" value={item.emotion || "未入力"} />
-                  <div className="sm:col-span-2"><DetailItem label="振り返り" value={item.review || "未入力"} /></div>
+                  <DetailItem label="決済理由" value={item.reason || "未入力"} className="col-span-2 lg:col-span-4" />
+                  <DetailItem label="感情" value={item.emotion || "未入力"} />
+                  <DetailItem label="振り返り" value={item.review || "未入力"} className="col-span-2 lg:col-span-4" />
                 </dl>
               </article>
             ))}</div>
