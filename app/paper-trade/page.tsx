@@ -103,7 +103,7 @@ export default function PaperTradePage() {
             <h2 className="text-xl font-semibold text-white">{editingId === null ? "新規作成" : "編集"}</h2>
             {editingId !== null && <button type="button" onClick={reset} className="min-h-10 border border-slate-700 px-4 text-sm text-slate-300">キャンセル</button>}
           </div>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          <div className="mt-6 grid min-w-0 grid-cols-2 gap-x-3 gap-y-4 sm:gap-5 [&>div]:min-w-0">
             <div><label>ティッカー</label><input value={form.ticker} onChange={(e) => update("ticker", e.target.value)} placeholder="AAPL" /></div>
             <div><label>銘柄名</label><input value={form.companyName} onChange={(e) => update("companyName", e.target.value)} placeholder="Apple" /></div>
             <div><label>買い／売り</label><select value={form.side} onChange={(e) => update("side", e.target.value as "買い" | "売り")}><option>買い</option><option>売り</option></select></div>
@@ -111,10 +111,10 @@ export default function PaperTradePage() {
             <div><label>取得単価</label><input type="number" min="0" step="0.01" inputMode="decimal" value={form.acquisitionPrice} onChange={(e) => update("acquisitionPrice", e.target.value)} /></div>
             <div><label>感情</label><select value={form.emotion} onChange={(e) => update("emotion", e.target.value)}><option>冷静</option><option>様子見</option><option>飛びつき</option><option>不安</option><option>自信あり</option><option>リベンジ</option></select></div>
             <div><label>結果</label><select value={form.result} onChange={(e) => update("result", e.target.value)}><option>未確定</option><option>勝ち</option><option>負け</option><option>引き分け</option></select></div>
-            <div className="sm:col-span-2"><label>理由</label><textarea rows={3} value={form.reason} onChange={(e) => update("reason", e.target.value)} /></div>
-            <div className="sm:col-span-2"><label>メモ</label><textarea rows={3} value={form.memo} onChange={(e) => update("memo", e.target.value)} /></div>
-            <div className="sm:col-span-2"><button type="button" onClick={save} className="min-h-11 bg-sky-600 px-5 font-semibold text-white hover:bg-sky-500">{editingId === null ? "保存" : "更新する"}</button></div>
-            {message && <p aria-live="polite" className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300 sm:col-span-2">{message}</p>}
+            <div className="col-span-2"><label>理由</label><textarea rows={3} value={form.reason} onChange={(e) => update("reason", e.target.value)} /></div>
+            <div className="col-span-2"><label>メモ</label><textarea rows={3} value={form.memo} onChange={(e) => update("memo", e.target.value)} /></div>
+            <div className="col-span-2"><button type="button" onClick={save} className="min-h-11 bg-sky-600 px-5 font-semibold text-white hover:bg-sky-500">{editingId === null ? "保存" : "更新する"}</button></div>
+            {message && <p aria-live="polite" className="col-span-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">{message}</p>}
           </div>
         </section>
 

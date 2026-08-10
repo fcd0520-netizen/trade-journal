@@ -303,3 +303,20 @@ npm run dev
 - 長いURLを理由欄へ入力して保存した後も横スクロールなし、フォーム内の画面外要素0件を確認
 - WatchlistとPaper TradeのlocalStorage保存を確認
 - コンソールエラー・Next.jsエラー画面ともに0件
+
+### Watchlist・Paper Trade独立ページのスマホ最適化
+
+### 変更内容
+
+- ホームのQuickFormとは別に存在する、WatchlistページとPaper Tradeページの新規作成フォームをモバイルから2列表示に変更
+- 監視理由・理由・メモ・保存操作・結果メッセージは2列分の全幅表示を維持
+- モバイルの列間隔を調整し、各グリッドと項目へ幅制約を追加して横はみ出しを防止
+- WatchlistはPCの3列表示、Paper TradeはPCの2列表示を維持
+
+### 検証
+
+- npm run lint 成功
+- npm run build 成功
+- 320px・360px・390pxで両独立ページの短い項目が2列になることを実ブラウザで確認
+- 文章欄と保存操作の幅比率1.0、各幅でscrollWidthとviewportが一致、画面外要素0件を確認
+- コンソールエラー・Next.jsエラー画面ともに0件

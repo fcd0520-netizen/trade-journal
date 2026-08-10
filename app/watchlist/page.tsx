@@ -363,7 +363,7 @@ export default function WatchlistPage() {
             )}
           </div>
 
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 grid min-w-0 grid-cols-2 gap-x-3 gap-y-4 sm:gap-5 lg:grid-cols-3 [&>div]:min-w-0">
             <div><label htmlFor="ticker">ティッカー</label><input id="ticker" value={form.ticker} onChange={(event) => update("ticker", event.target.value)} placeholder="AAPL" /></div>
             <div><label htmlFor="company-name">銘柄名</label><input id="company-name" value={form.companyName} onChange={(event) => update("companyName", event.target.value)} placeholder="Apple" /></div>
             <div><label htmlFor="currency">通貨</label><select id="currency" value={form.currency} onChange={(event) => update("currency", event.target.value as WatchlistCurrency)}><option value="USD">USD</option><option value="JPY">JPY</option></select></div>
@@ -371,9 +371,9 @@ export default function WatchlistPage() {
             <div><label htmlFor="target-price">希望購入価格</label><input id="target-price" type="number" min="0" step="any" inputMode="decimal" value={form.targetPrice} onChange={(event) => update("targetPrice", event.target.value)} placeholder={form.currency === "USD" ? "165.00" : "2200"} /></div>
             <div><label htmlFor="start-date">監視開始日</label><input id="start-date" type="date" value={form.startDate} onChange={(event) => update("startDate", event.target.value)} /></div>
             <div><label htmlFor="status">ステータス</label><select id="status" value={form.status} onChange={(event) => update("status", event.target.value as WatchlistStatus)}><option value="監視中">監視中</option><option value="✅ 購入済">✅ 購入済</option><option value="❌ 見送り">❌ 見送り</option></select></div>
-            <div className="sm:col-span-2 lg:col-span-3"><label htmlFor="reason">監視理由</label><textarea id="reason" rows={3} value={form.reason} onChange={(event) => update("reason", event.target.value)} placeholder="監視を始めた理由や注目しているポイント" /></div>
-            <div className="sm:col-span-2 lg:col-span-3"><button type="button" onClick={save} className="min-h-11 bg-sky-600 px-5 font-semibold text-white hover:bg-sky-500">{editingId === null ? "追加する" : "更新する"}</button></div>
-            {message && <p aria-live="polite" className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300 sm:col-span-2 lg:col-span-3">{message}</p>}
+            <div className="col-span-2 lg:col-span-3"><label htmlFor="reason">監視理由</label><textarea id="reason" rows={3} value={form.reason} onChange={(event) => update("reason", event.target.value)} placeholder="監視を始めた理由や注目しているポイント" /></div>
+            <div className="col-span-2 lg:col-span-3"><button type="button" onClick={save} className="min-h-11 bg-sky-600 px-5 font-semibold text-white hover:bg-sky-500">{editingId === null ? "追加する" : "更新する"}</button></div>
+            {message && <p aria-live="polite" className="col-span-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300 lg:col-span-3">{message}</p>}
           </div>
         </section>
 
