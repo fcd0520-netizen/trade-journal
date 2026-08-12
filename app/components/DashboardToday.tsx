@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   calculateTargetDifference,
   getSignal,
   toPositivePrice,
 } from "../lib/watchlist-pricing";
+import { getRecordHref, type RecordSource } from "../lib/record-links";
 import type { ActiveJournal } from "../types/journal";
 import type { WatchlistItem } from "../types/watchlist";
 
@@ -18,6 +20,8 @@ type TodayItemType = "earnings" | "target" | "position";
 
 type TodayItem = {
   id: string;
+  source: RecordSource;
+  recordId: number;
   type: TodayItemType;
   ticker: string;
   detail: string;
@@ -167,17 +171,43 @@ export default function DashboardToday({ journals, watchlistItems }: DashboardTo
     const activeWatchlistItems = watchlistItems.filter(
       (item) => item.status !== "❌ 見送り",
     );
-    const positionItems = [...activeJournals]
-      .sort(
-        (left, right) =>
-          right.tradeDate.localeCompare(left.tradeDate) || right.id - left.id,
-      )
+    const sortedActiveJournals = [...activeJournals].sort(
+      (left, right) =>
+        right.tradeDate.localeCompare(left.tradeDate) || right.id - left.id,
+    );
+    const positionItems = sortedActiveJournals
       .map<TodayItem>((journal) => ({
         id: `position-${journal.id}`,
+        source: "journal",
+        recordId: journal.id,
         type: "position",
         ticker: normalizeTicker(journal.target),
         detail: journal.status === "partial" ? "一部決済・保有中" : "保有中",
       }));
+    const earningsRecordByTicker = new Map<
+      string,
+      Pick<TodayItem, "source" | "recordId">
+    >();
+    for (const journal of sortedActiveJournals) {
+      const ticker = normalizeTicker(journal.target);
+      if (!earningsRecordByTicker.has(ticker)) {
+        earningsRecordByTicker.set(ticker, {
+          source: "journal",
+          recordId: journal.id,
+        });
+      }
+    }
+    for (const item of [...activeWatchlistItems].sort(
+      (left, right) => right.id - left.id,
+    )) {
+      const ticker = normalizeTicker(item.ticker);
+      if (!earningsRecordByTicker.has(ticker)) {
+        earningsRecordByTicker.set(ticker, {
+          source: "watchlist",
+          recordId: item.id,
+        });
+      }
+    }
     const earningsTickers = Array.from(
       new Set([
         ...activeJournals.map((journal) => normalizeTicker(journal.target)),
@@ -225,6 +255,9 @@ export default function DashboardToday({ journals, watchlistItems }: DashboardTo
       const earningsItems = earningsResults
         .flatMap((result): (TodayItem & { daysUntil: number })[] => {
           if (!result) return [];
+          const ticker = normalizeTicker(result.ticker);
+          const record = earningsRecordByTicker.get(ticker);
+          if (!record) return [];
           const nextEvent = result.events
             .map((event) => ({ event, daysUntil: getDaysUntil(event.reportDate) }))
             .filter(
@@ -242,8 +275,10 @@ export default function DashboardToday({ journals, watchlistItems }: DashboardTo
           return nextEvent
             ? [{
                 id: `earnings-${result.ticker}`,
+                source: record.source,
+                recordId: record.recordId,
                 type: "earnings",
-                ticker: normalizeTicker(result.ticker),
+                ticker,
                 detail: formatEarningsDetail(nextEvent.daysUntil),
                 daysUntil: nextEvent.daysUntil,
               }]
@@ -255,6 +290,8 @@ export default function DashboardToday({ journals, watchlistItems }: DashboardTo
         )
         .map<TodayItem>((item) => ({
           id: item.id,
+          source: item.source,
+          recordId: item.recordId,
           type: item.type,
           ticker: item.ticker,
           detail: item.detail,
@@ -275,6 +312,8 @@ export default function DashboardToday({ journals, watchlistItems }: DashboardTo
 
           return [{
             id: `target-${item.id}`,
+            source: "watchlist",
+            recordId: item.id,
             type: "target",
             ticker,
             detail: formatTargetDetail(difference),
@@ -287,6 +326,8 @@ export default function DashboardToday({ journals, watchlistItems }: DashboardTo
         )
         .map<TodayItem>((item) => ({
           id: item.id,
+          source: item.source,
+          recordId: item.recordId,
           type: item.type,
           ticker: item.ticker,
           detail: item.detail,
@@ -333,22 +374,28 @@ export default function DashboardToday({ journals, watchlistItems }: DashboardTo
           {todayItems.map((item) => {
             const meta = todayItemMeta[item.type];
             return (
-              <li
-                key={item.id}
-                className="flex min-h-12 min-w-0 items-center gap-2.5 border-b border-slate-800 px-3 py-2.5 last:border-b-0 sm:gap-3 sm:px-4"
-              >
-                <span className={`inline-flex shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold ${meta.className}`}>
-                  {meta.label}
-                </span>
-                <span className="min-w-0 shrink truncate text-sm font-semibold tracking-wide text-white">
-                  {item.ticker}
-                </span>
-                <span
-                  title={item.detail}
-                  className={`min-w-0 flex-1 truncate text-right text-xs font-medium sm:text-sm ${meta.detailClassName}`}
+              <li key={item.id} className="border-b border-slate-800 last:border-b-0">
+                <Link
+                  href={getRecordHref(item.source, item.recordId)}
+                  aria-label={`${item.ticker}の記録を開く：${item.detail}`}
+                  className="flex min-h-12 min-w-0 items-center gap-2.5 px-3 py-2.5 transition hover:bg-slate-800/55 focus:outline-none focus-visible:bg-slate-800/55 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 sm:gap-3 sm:px-4"
                 >
-                  {item.detail}
-                </span>
+                  <span className={`inline-flex shrink-0 rounded-md border px-2 py-1 text-[10px] font-semibold ${meta.className}`}>
+                    {meta.label}
+                  </span>
+                  <span className="min-w-0 shrink truncate text-sm font-semibold tracking-wide text-white">
+                    {item.ticker}
+                  </span>
+                  <span
+                    title={item.detail}
+                    className={`min-w-0 flex-1 truncate text-right text-xs font-medium sm:text-sm ${meta.detailClassName}`}
+                  >
+                    {item.detail}
+                  </span>
+                  <span aria-hidden="true" className="shrink-0 text-lg leading-none text-slate-600">
+                    ›
+                  </span>
+                </Link>
               </li>
             );
           })}

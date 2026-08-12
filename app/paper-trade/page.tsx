@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import RecordRouteSync from "../components/RecordRouteSync";
 import Sidebar from "../components/Sidebar";
 import type { PaperTrade } from "../types/paper-trade";
 
@@ -25,6 +26,7 @@ export default function PaperTradePage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState("");
+  const [linkedRecordId, setLinkedRecordId] = useState<number | null>(null);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -43,6 +45,18 @@ export default function PaperTradePage() {
   useEffect(() => {
     if (loaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
   }, [trades, loaded]);
+
+  useEffect(() => {
+    if (!loaded || linkedRecordId === null) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>(`[data-paper-trade-id="${linkedRecordId}"]`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [linkedRecordId, loaded]);
 
   const update = <K extends keyof Omit<PaperTrade, "id" | "createdAt">>(key: K, value: Omit<PaperTrade, "id" | "createdAt">[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -90,6 +104,9 @@ export default function PaperTradePage() {
   return (
     <main className="ios-app min-h-screen w-full min-w-0 max-w-full px-4 py-10 sm:px-6 lg:pl-[calc(16rem+1.5rem)]">
       <Sidebar />
+      <Suspense fallback={null}>
+        <RecordRouteSync source="paperTrade" onSelect={setLinkedRecordId} />
+      </Suspense>
       <div className="mx-auto w-full min-w-0 max-w-5xl space-y-7">
         <header className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
           <Link href="/" className="relative z-10 text-sm font-semibold text-blue-200 hover:text-white">← Dashboardへ戻る</Link>
@@ -118,11 +135,11 @@ export default function PaperTradePage() {
           </div>
         </section>
 
-        <section className="ios-card rounded-2xl p-5 sm:p-7">
+        <section id="paper-trade-list" className="ios-card scroll-mt-6 rounded-2xl p-5 sm:p-7">
           <div><h2 className="text-xl font-semibold text-white">一覧</h2><p className="mt-1 text-sm text-slate-500">{trades.length}件</p></div>
           {trades.length === 0 ? <p className="mt-5 rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-500">まだPaper Tradeがありません。</p> : (
             <div className="mt-5 space-y-3">
-              {trades.map((trade) => <article key={trade.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 sm:p-5">
+              {trades.map((trade) => <article key={trade.id} data-paper-trade-id={trade.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 sm:p-5">
                 <div className="flex flex-col justify-between gap-4 sm:flex-row">
                   <div><div className="flex flex-wrap items-center gap-2"><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${trade.side === "買い" ? "border-emerald-400/25 text-emerald-300" : "border-rose-400/25 text-rose-300"}`}>{trade.side}</span><h3 className="font-semibold text-white">{trade.ticker}</h3><span className="text-sm text-slate-400">{trade.companyName || "銘柄名未入力"}</span><span className="text-xs text-slate-500">{trade.result}</span></div></div>
                   <div className="flex gap-2"><button type="button" onClick={() => edit(trade)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300">編集</button><button type="button" onClick={() => remove(trade.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300">削除</button></div>

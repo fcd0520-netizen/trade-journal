@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatProfitUsd, parseMoney } from "../lib/currency";
+import { getRecordHref, type RecordSource } from "../lib/record-links";
 import type { ActiveJournal } from "../types/journal";
 import type { WatchlistItem, WatchlistStatus } from "../types/watchlist";
 import DashboardToday from "./DashboardToday";
@@ -16,10 +17,11 @@ type SummaryCounts = {
   paperTrades: number;
 };
 
-type ActivityType = "journal" | "watchlist" | "paperTrade";
+type ActivityType = RecordSource;
 
 type RecentActivity = {
   id: string;
+  recordId: number;
   type: ActivityType;
   ticker: string;
   createdAt: string;
@@ -94,10 +96,19 @@ const getRecentActivities = (): RecentActivity[] => {
 
   return sources
     .flatMap(({ key, type, tickerKey }) =>
-      getStoredItems(key).map((item, index) => {
+      getStoredItems(key).flatMap((item) => {
+        if (
+          typeof item.id !== "number" ||
+          !Number.isSafeInteger(item.id) ||
+          item.id <= 0
+        ) {
+          return [];
+        }
+
         const timestamp = getActivityDate(item);
-        return {
-          id: `${type}-${String(item.id ?? index)}`,
+        return [{
+          id: `${type}-${item.id}`,
+          recordId: item.id,
           type,
           ticker:
             typeof item[tickerKey] === "string" && item[tickerKey].trim()
@@ -105,7 +116,7 @@ const getRecentActivities = (): RecentActivity[] => {
               : "名称未入力",
           createdAt: timestamp ? new Date(timestamp).toISOString() : "",
           timestamp,
-        };
+        }];
       })
     )
     .sort((a, b) => b.timestamp - a.timestamp)
@@ -116,11 +127,18 @@ const isWatchlistStatus = (value: unknown): value is WatchlistStatus =>
   value === "監視中" || value === "✅ 購入済" || value === "❌ 見送り";
 
 const getStoredWatchlistItems = (): WatchlistItem[] =>
-  getStoredItems(SUMMARY_STORAGE_KEYS.watchlist).flatMap((item, index) => {
+  getStoredItems(SUMMARY_STORAGE_KEYS.watchlist).flatMap((item) => {
     if (typeof item.ticker !== "string" || !item.ticker.trim()) return [];
+    if (
+      typeof item.id !== "number" ||
+      !Number.isSafeInteger(item.id) ||
+      item.id <= 0
+    ) {
+      return [];
+    }
 
     return [{
-      id: typeof item.id === "number" ? item.id : -(index + 1),
+      id: item.id,
       createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
       ticker: item.ticker.trim().toUpperCase(),
       companyName: typeof item.companyName === "string" ? item.companyName : "",
@@ -328,24 +346,30 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
             {recentActivities.map((activity) => {
               const meta = activityMeta[activity.type];
               return (
-                <li
-                  key={activity.id}
-                  className="flex min-h-16 items-center gap-3 border-b border-slate-800 px-3.5 py-3 last:border-b-0 sm:px-4"
-                >
-                  <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-lg font-semibold ${meta.iconClass}`}
-                    aria-hidden="true"
+                <li key={activity.id} className="border-b border-slate-800 last:border-b-0">
+                  <Link
+                    href={getRecordHref(activity.type, activity.recordId)}
+                    aria-label={`${activity.ticker}の${meta.label}記録を開く`}
+                    className="flex min-h-16 items-center gap-3 px-3.5 py-3 transition hover:bg-slate-800/55 focus:outline-none focus-visible:bg-slate-800/55 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 sm:px-4"
                   >
-                    {meta.icon}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-slate-100">
-                      {activity.ticker} を{meta.label}へ追加
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-lg font-semibold ${meta.iconClass}`}
+                      aria-hidden="true"
+                    >
+                      {meta.icon}
                     </span>
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      登録日 {formatActivityDate(activity.createdAt)}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-slate-100">
+                        {activity.ticker} を{meta.label}へ追加
+                      </span>
+                      <span className="mt-0.5 block text-xs text-slate-500">
+                        登録日 {formatActivityDate(activity.createdAt)}
+                      </span>
                     </span>
-                  </span>
+                    <span aria-hidden="true" className="shrink-0 text-lg leading-none text-slate-600">
+                      ›
+                    </span>
+                  </Link>
                 </li>
               );
             })}

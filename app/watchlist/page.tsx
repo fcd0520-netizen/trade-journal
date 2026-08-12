@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import RecordRouteSync from "../components/RecordRouteSync";
 import Sidebar from "../components/Sidebar";
 import {
   calculateChangePercent,
@@ -137,6 +138,7 @@ export default function WatchlistPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [selectedChartId, setSelectedChartId] = useState<number | null>(null);
+  const [linkedRecordId, setLinkedRecordId] = useState<number | null>(null);
   const [tradeMarkersByTicker, setTradeMarkersByTicker] = useState<Record<string, TradeMarker[]>>({});
 
   useEffect(() => {
@@ -170,6 +172,21 @@ export default function WatchlistPage() {
       return () => window.clearTimeout(timeout);
     }
   }, [items, loaded]);
+
+  useEffect(() => {
+    if (!loaded || linkedRecordId === null) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const linkedItem = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `[data-watchlist-id="${linkedRecordId}"]`,
+        ),
+      ).find((element) => element.offsetParent !== null);
+      linkedItem?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [linkedRecordId, loaded]);
 
   const update = <K extends keyof Omit<WatchlistItem, "id" | "createdAt">>(
     key: K,
@@ -309,6 +326,9 @@ export default function WatchlistPage() {
   return (
     <main className="ios-app min-h-screen w-full min-w-0 max-w-full bg-[#060b16] px-4 py-20 sm:px-6 sm:py-12 lg:pl-[calc(16rem+1.5rem)]">
       <Sidebar />
+      <Suspense fallback={null}>
+        <RecordRouteSync source="watchlist" onSelect={setLinkedRecordId} />
+      </Suspense>
       <div className="mx-auto w-full min-w-0 max-w-6xl space-y-7 sm:space-y-9">
         <header className="ios-hero overflow-hidden rounded-2xl p-6 sm:p-8">
           <Link
@@ -346,7 +366,7 @@ export default function WatchlistPage() {
           </div>
         </section>
 
-        <section className="ios-card rounded-2xl p-5 sm:p-7">
+        <section id="watchlist-list" className="ios-card scroll-mt-6 rounded-2xl p-5 sm:p-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-white">一覧</h2>
@@ -377,7 +397,7 @@ export default function WatchlistPage() {
                     const changePercent = calculateChangePercent(currentPrice, item.startingPrice);
                     const targetDifference = calculateTargetDifference(currentPrice, item.targetPrice);
                     const signal = getSignal(currentPrice, item.targetPrice);
-                    return <tr key={item.id} className="border-t border-slate-800 text-slate-200"><td className="px-4 py-4 font-semibold text-white">{item.ticker}</td><td className="px-4 py-4">{item.companyName || "未入力"}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.startingPrice, item.currency)}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.targetPrice, item.currency)}</td><td className="px-4 py-4"><span className="whitespace-nowrap font-semibold text-white">{priceLabel}</span>{detail && <span className={`mt-1 block max-w-52 text-xs ${quoteErrors[item.ticker.trim().toUpperCase()] ? "text-rose-300" : "text-slate-500"}`}>{detail}</span>}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></td><td className="whitespace-nowrap px-4 py-4">{item.startDate || "未入力"}</td><td className="px-3 py-4"><button type="button" onClick={() => setSelectedChartId(item.id)} disabled={item.currency !== "USD" || selectedChartId === item.id} className="min-h-10 border border-sky-500/30 bg-sky-500/10 px-4 text-sm font-semibold text-sky-300 hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50">チャート</button></td><td className="px-3 py-4"><button type="button" onClick={() => edit(item)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300 hover:bg-amber-500/20">編集</button></td><td className="px-3 py-4"><button type="button" onClick={() => remove(item.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300 hover:bg-rose-500/20">削除</button></td></tr>;
+                    return <tr key={item.id} data-watchlist-id={item.id} className="border-t border-slate-800 text-slate-200"><td className="px-4 py-4 font-semibold text-white">{item.ticker}</td><td className="px-4 py-4">{item.companyName || "未入力"}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.startingPrice, item.currency)}</td><td className="whitespace-nowrap px-4 py-4">{formatPrice(item.targetPrice, item.currency)}</td><td className="px-4 py-4"><span className="whitespace-nowrap font-semibold text-white">{priceLabel}</span>{detail && <span className={`mt-1 block max-w-52 text-xs ${quoteErrors[item.ticker.trim().toUpperCase()] ? "text-rose-300" : "text-slate-500"}`}>{detail}</span>}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</td><td className={`whitespace-nowrap px-4 py-4 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></td><td className="px-4 py-4"><span className={`whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></td><td className="whitespace-nowrap px-4 py-4">{item.startDate || "未入力"}</td><td className="px-3 py-4"><button type="button" onClick={() => setSelectedChartId(item.id)} disabled={item.currency !== "USD" || selectedChartId === item.id} className="min-h-10 border border-sky-500/30 bg-sky-500/10 px-4 text-sm font-semibold text-sky-300 hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50">チャート</button></td><td className="px-3 py-4"><button type="button" onClick={() => edit(item)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-4 text-sm font-semibold text-amber-300 hover:bg-amber-500/20">編集</button></td><td className="px-3 py-4"><button type="button" onClick={() => remove(item.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-4 text-sm font-semibold text-rose-300 hover:bg-rose-500/20">削除</button></td></tr>;
                   })}</tbody>
                 </table>
               </div>
@@ -387,7 +407,7 @@ export default function WatchlistPage() {
                 const changePercent = calculateChangePercent(currentPrice, item.startingPrice);
                 const targetDifference = calculateTargetDifference(currentPrice, item.targetPrice);
                 const signal = getSignal(currentPrice, item.targetPrice);
-                return <article key={item.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{item.ticker}</h3><span className="text-sm text-slate-400">{item.companyName || "銘柄名未入力"}</span><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-4 text-sm"><div><dt className="text-slate-500">監視開始価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.startingPrice, item.currency)}</dd></div><div><dt className="text-slate-500">希望購入価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.targetPrice, item.currency)}</dd></div><div><dt className="text-slate-500">現在価格</dt><dd className="mt-1 font-semibold text-white">{priceLabel}</dd>{detail && <dd className={`mt-1 text-xs ${quoteErrors[item.ticker.trim().toUpperCase()] ? "text-rose-300" : "text-slate-500"}`}>{detail}</dd>}</div><div><dt className="text-slate-500">シグナル</dt><dd className="mt-1"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></dd></div><div><dt className="text-slate-500">監視開始比</dt><dd className={`mt-1 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</dd></div><div><dt className="text-slate-500">希望価格との差</dt><dd className={`mt-1 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</dd></div><div className="col-span-2"><dt className="text-slate-500">監視開始日</dt><dd className="mt-1 text-slate-200">{item.startDate || "未入力"}</dd></div></dl><div className="mt-4 grid grid-cols-3 gap-2"><button type="button" onClick={() => setSelectedChartId(item.id)} disabled={item.currency !== "USD" || selectedChartId === item.id} className="min-h-10 border border-sky-500/30 bg-sky-500/10 px-2 text-sm font-semibold text-sky-300 disabled:cursor-not-allowed disabled:opacity-50">チャート</button><button type="button" onClick={() => edit(item)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-2 text-sm font-semibold text-amber-300">編集</button><button type="button" onClick={() => remove(item.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-2 text-sm font-semibold text-rose-300">削除</button></div></article>;
+                return <article key={item.id} data-watchlist-id={item.id} className="rounded-xl border border-slate-800 bg-slate-950/50 p-4"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{item.ticker}</h3><span className="text-sm text-slate-400">{item.companyName || "銘柄名未入力"}</span><span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[item.status]}`}>{item.status}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-800 pt-4 text-sm"><div><dt className="text-slate-500">監視開始価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.startingPrice, item.currency)}</dd></div><div><dt className="text-slate-500">希望購入価格</dt><dd className="mt-1 text-slate-200">{formatPrice(item.targetPrice, item.currency)}</dd></div><div><dt className="text-slate-500">現在価格</dt><dd className="mt-1 font-semibold text-white">{priceLabel}</dd>{detail && <dd className={`mt-1 text-xs ${quoteErrors[item.ticker.trim().toUpperCase()] ? "text-rose-300" : "text-slate-500"}`}>{detail}</dd>}</div><div><dt className="text-slate-500">シグナル</dt><dd className="mt-1"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${signalClass[signal]}`}>{signal}</span></dd></div><div><dt className="text-slate-500">監視開始比</dt><dd className={`mt-1 font-semibold ${percentClass(changePercent)}`}>{formatPercent(changePercent)}</dd></div><div><dt className="text-slate-500">希望価格との差</dt><dd className={`mt-1 font-semibold ${percentClass(targetDifference)}`}>{formatPercent(targetDifference)}</dd></div><div className="col-span-2"><dt className="text-slate-500">監視開始日</dt><dd className="mt-1 text-slate-200">{item.startDate || "未入力"}</dd></div></dl><div className="mt-4 grid grid-cols-3 gap-2"><button type="button" onClick={() => setSelectedChartId(item.id)} disabled={item.currency !== "USD" || selectedChartId === item.id} className="min-h-10 border border-sky-500/30 bg-sky-500/10 px-2 text-sm font-semibold text-sky-300 disabled:cursor-not-allowed disabled:opacity-50">チャート</button><button type="button" onClick={() => edit(item)} className="min-h-10 border border-amber-500/30 bg-amber-500/10 px-2 text-sm font-semibold text-amber-300">編集</button><button type="button" onClick={() => remove(item.id)} className="min-h-10 border border-rose-500/30 bg-rose-500/10 px-2 text-sm font-semibold text-rose-300">削除</button></div></article>;
               })}</div>
             </>
           )}
