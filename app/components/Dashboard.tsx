@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatProfitUsd, parseMoney } from "../lib/currency";
 import type { ActiveJournal } from "../types/journal";
-import type { WatchlistItem } from "../types/watchlist";
+import type { WatchlistItem, WatchlistStatus } from "../types/watchlist";
+import DashboardToday from "./DashboardToday";
 
 type DashboardProps = {
   journals: ActiveJournal[];
@@ -168,19 +169,30 @@ const getRecentActivities = (): RecentActivity[] => {
     .slice(0, 5);
 };
 
-const getWatchingItems = (): WatchlistItem[] =>
-  getStoredItems(SUMMARY_STORAGE_KEYS.watchlist)
-    .filter(
-      (item): item is Record<string, unknown> & WatchlistItem =>
-        item.status === "監視中" &&
-        typeof item.id === "number" &&
-        typeof item.createdAt === "string" &&
-        typeof item.ticker === "string" &&
-        typeof item.companyName === "string" &&
-        typeof item.reason === "string" &&
-        typeof item.targetPrice === "string" &&
-        (item.currency === "USD" || item.currency === "JPY")
-    )
+const isWatchlistStatus = (value: unknown): value is WatchlistStatus =>
+  value === "監視中" || value === "✅ 購入済" || value === "❌ 見送り";
+
+const getStoredWatchlistItems = (): WatchlistItem[] =>
+  getStoredItems(SUMMARY_STORAGE_KEYS.watchlist).flatMap((item, index) => {
+    if (typeof item.ticker !== "string" || !item.ticker.trim()) return [];
+
+    return [{
+      id: typeof item.id === "number" ? item.id : -(index + 1),
+      createdAt: typeof item.createdAt === "string" ? item.createdAt : "",
+      ticker: item.ticker.trim().toUpperCase(),
+      companyName: typeof item.companyName === "string" ? item.companyName : "",
+      currency: item.currency === "JPY" ? "JPY" : "USD",
+      startingPrice: typeof item.startingPrice === "string" ? item.startingPrice : "",
+      targetPrice: typeof item.targetPrice === "string" ? item.targetPrice : "",
+      startDate: typeof item.startDate === "string" ? item.startDate : "",
+      reason: typeof item.reason === "string" ? item.reason : "",
+      status: isWatchlistStatus(item.status) ? item.status : "監視中",
+    }];
+  });
+
+const getWatchingItems = (items: WatchlistItem[]): WatchlistItem[] =>
+  items
+    .filter((item) => item.status === "監視中")
     .sort((a, b) => getActivityDate(b) - getActivityDate(a))
     .slice(0, 3);
 
@@ -254,6 +266,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
     useState<SummaryCounts>(emptySummaryCounts);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [watchingItems, setWatchingItems] = useState<WatchlistItem[]>([]);
+  const [todayWatchlistItems, setTodayWatchlistItems] = useState<WatchlistItem[]>([]);
   const [globalSearchItems, setGlobalSearchItems] = useState<GlobalSearchItem[]>([]);
   const [globalSearch, setGlobalSearch] = useState("");
 
@@ -264,13 +277,15 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
       if (frame !== null) window.cancelAnimationFrame(frame);
 
       frame = window.requestAnimationFrame(() => {
+        const storedWatchlistItems = getStoredWatchlistItems();
         setSummaryCounts({
           journals: getStoredItemCount(SUMMARY_STORAGE_KEYS.journals),
           watchlist: getStoredItemCount(SUMMARY_STORAGE_KEYS.watchlist),
           paperTrades: getStoredItemCount(SUMMARY_STORAGE_KEYS.paperTrades),
         });
         setRecentActivities(getRecentActivities());
-        setWatchingItems(getWatchingItems());
+        setWatchingItems(getWatchingItems(storedWatchlistItems));
+        setTodayWatchlistItems(storedWatchlistItems);
         setGlobalSearchItems(getGlobalSearchItems());
         frame = null;
       });
@@ -313,19 +328,6 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
   const monthlyCompletedResults = getCompletedResults(monthlyJournals);
   const monthlyWins = monthlyCompletedResults.filter(
     (journal) => journal.result === "勝ち"
-  ).length;
-  const monthlyDecidedResults = monthlyJournals.filter((journal) =>
-    ["勝ち", "負け"].includes(journal.result)
-  );
-  const monthlyDecidedWins = monthlyDecidedResults.filter(
-    (journal) => journal.result === "勝ち"
-  ).length;
-  const monthlyProfit = monthlyJournals.reduce(
-    (total, journal) => total + (parseMoney(journal.profit) ?? 0),
-    0
-  );
-  const monthlyRulesFollowed = monthlyJournals.filter(
-    (journal) => journal.ruleFollowed
   ).length;
   const recentJournals = [...journals]
     .sort(
@@ -454,41 +456,7 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
         )}
       </section>
 
-      <section aria-labelledby="today-title" className="ios-card overflow-hidden rounded-2xl border-blue-400/20 bg-gradient-to-br from-blue-950/70 via-slate-900/95 to-slate-950/95 p-5 sm:p-6">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Today</p>
-          <h3 id="today-title" className="mt-2 text-lg font-semibold tracking-tight text-white sm:text-xl">
-            今日も、良い意思決定を積み重ねよう。
-          </h3>
-        </div>
-
-        <dl className="mt-5 grid grid-cols-3 divide-x divide-slate-800 rounded-xl border border-slate-800 bg-slate-950/45 py-3 sm:mt-6 sm:py-4">
-          <div className="min-w-0 px-2 text-center sm:px-4">
-            <dt className="text-[10px] font-medium leading-4 text-slate-500 sm:text-xs">今月の勝率</dt>
-            <dd className="mt-1 break-words text-lg font-semibold tracking-tight text-white sm:text-2xl">
-              {monthlyDecidedResults.length === 0
-                ? "—"
-                : `${toPercentage(monthlyDecidedWins, monthlyDecidedResults.length)}%`}
-            </dd>
-          </div>
-          <div className="min-w-0 px-2 text-center sm:px-4">
-            <dt className="text-[10px] font-medium leading-4 text-slate-500 sm:text-xs">今月の損益</dt>
-            <dd className={`mt-1 break-words text-base font-semibold tracking-tight sm:text-2xl ${monthlyJournals.length === 0 ? "text-slate-500" : profitColor(monthlyProfit)}`}>
-              {monthlyJournals.length === 0
-                ? "—"
-                : formatProfitUsd(monthlyProfit) ?? "$0.00"}
-            </dd>
-          </div>
-          <div className="min-w-0 px-2 text-center sm:px-4">
-            <dt className="text-[10px] font-medium leading-4 text-slate-500 sm:text-xs">ルール遵守率</dt>
-            <dd className="mt-1 break-words text-lg font-semibold tracking-tight text-white sm:text-2xl">
-              {monthlyJournals.length === 0
-                ? "—"
-                : `${toPercentage(monthlyRulesFollowed, monthlyJournals.length)}%`}
-            </dd>
-          </div>
-        </dl>
-      </section>
+      <DashboardToday journals={journals} watchlistItems={todayWatchlistItems} />
 
       <section aria-labelledby="recent-activity-title" className="ios-card rounded-2xl p-5 sm:p-6">
         <div className="flex items-end justify-between gap-4">
