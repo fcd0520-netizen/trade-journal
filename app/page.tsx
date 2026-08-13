@@ -432,7 +432,7 @@ export default function Home() {
           <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">Trade Journal</h1>
 
           <p className="mt-3 text-sm text-slate-400 sm:text-base">
-            利益ではなく、良い意思決定を積み重ねる
+            良い意思決定の積み重ね
           </p>
         </section>
 
