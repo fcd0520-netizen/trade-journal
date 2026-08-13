@@ -447,12 +447,19 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
 
       <div className="ios-dashboard grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
         {cards.map((card) => (
-          <div key={card.label} className="ios-stat flex min-h-32 flex-col justify-between rounded-2xl p-4 sm:min-h-36 sm:p-5">
+          <div
+            key={card.label}
+            className={`ios-stat flex min-h-32 min-w-0 flex-col justify-between rounded-2xl p-4 sm:min-h-36 sm:p-5 ${
+              card.label === "損益合計"
+                ? "col-span-2 overflow-hidden sm:col-span-1"
+                : ""
+            }`}
+          >
             <div className="flex items-center justify-between gap-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 sm:text-xs">{card.label}</p>
               <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-blue-400/15 bg-blue-500/10 text-lg font-semibold text-blue-400" aria-hidden="true">{card.icon}</span>
             </div>
-            <p className={`mt-4 text-2xl font-semibold tracking-tight sm:text-3xl ${card.valueClass}`}>{card.value}</p>
+            <p className={`mt-4 text-2xl font-semibold tracking-tight sm:text-3xl ${card.valueClass} ${card.label === "損益合計" ? "whitespace-nowrap" : ""}`}>{card.value}</p>
           </div>
         ))}
       </div>
