@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { PaperTrade } from "../types/paper-trade";
+import { saveCloudData } from "../lib/supabase";
 
 const STORAGE_KEY = "paper-trades";
 
@@ -48,7 +49,11 @@ export default function PaperTradeQuickForm() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       const trades = saved ? (JSON.parse(saved) as PaperTrade[]) : [];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([trade, ...trades]));
+      const nextTrades = [trade, ...trades];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextTrades));
+      void saveCloudData(STORAGE_KEY, nextTrades).catch(() => {
+        setMessage("クラウドへ保存できませんでした。");
+      });
       setForm(emptyForm());
       setIsError(false);
       setMessage("Paper Tradeを保存しました。");

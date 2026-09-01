@@ -18,6 +18,7 @@ import type {
   WatchlistStatus,
   StockQuote,
 } from "../types/watchlist";
+import { saveCloudData } from "../lib/supabase";
 
 const STORAGE_KEY = "trade-journal-watchlist";
 const JOURNAL_STORAGE_KEY = "trade-journals";
@@ -167,6 +168,9 @@ export default function WatchlistPage() {
     if (!loaded) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      void saveCloudData(STORAGE_KEY, items).catch(() => {
+        setMessage("クラウドへ保存できませんでした。通信状態を確認してください。");
+      });
     } catch {
       const timeout = window.setTimeout(() => setMessage("保存データを書き込めませんでした。"), 0);
       return () => window.clearTimeout(timeout);

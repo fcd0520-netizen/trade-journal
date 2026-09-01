@@ -11,6 +11,7 @@ import Sidebar from "./components/Sidebar";
 import TradeDetail from "./components/TradeDetail";
 import WatchlistQuickForm from "./components/WatchlistQuickForm";
 import { calculateInvestment, formatProfitCurrency, formatProfitUsd, formatUsd, normalizeStoredMoney, parseMoney } from "./lib/currency";
+import { saveCloudData } from "./lib/supabase";
 import type { ActiveJournal, Currency, EntryDirection, Journal, JournalStatus, Settlement, TradeCategory } from "./types/journal";
 
 type StoredJournal = Omit<Partial<Journal>, "amount" | "profit"> & {
@@ -187,6 +188,9 @@ export default function Home() {
     if (!hasLoaded) return;
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(journals));
+    void saveCloudData(STORAGE_KEY, journals).catch(() => {
+      setMessage("クラウドへ保存できませんでした。通信状態を確認してください。");
+    });
   }, [journals, hasLoaded]);
 
   const resetForm = () => {

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import CloudAccountButton from "./CloudAccountButton";
 
 const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: "dashboard", href: "/" },
@@ -125,6 +126,7 @@ export default function Sidebar() {
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-400">Trade Journal</p>
         <p className="mt-2 text-lg font-semibold text-white">Navigation</p>
         {navigation}
+        <CloudAccountButton />
       </aside>
 
       <div className={`fixed inset-0 z-50 overflow-hidden lg:hidden ${isOpen ? "pointer-events-auto" : "pointer-events-none"}`} aria-hidden={!isOpen}>
@@ -156,6 +158,7 @@ export default function Sidebar() {
             </button>
           </div>
           {navigation}
+          <CloudAccountButton />
         </aside>
       </div>
     </>

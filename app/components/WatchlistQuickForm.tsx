@@ -6,6 +6,7 @@ import type {
   WatchlistItem,
   WatchlistStatus,
 } from "../types/watchlist";
+import { saveCloudData } from "../lib/supabase";
 
 const STORAGE_KEY = "trade-journal-watchlist";
 
@@ -52,7 +53,11 @@ export default function WatchlistQuickForm() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       const items = saved ? (JSON.parse(saved) as WatchlistItem[]) : [];
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([item, ...items]));
+      const nextItems = [item, ...items];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextItems));
+      void saveCloudData(STORAGE_KEY, nextItems).catch(() => {
+        setMessage("クラウドへ保存できませんでした。");
+      });
       setForm(emptyForm());
       setIsError(false);
       setMessage("Watchlistに追加しました。");
