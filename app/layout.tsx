@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "react-calendar/dist/Calendar.css";
 import "./globals.css";
-import CloudDataProvider from "./components/CloudDataProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +30,7 @@ export default function RootLayout({
     >
       <body className="min-h-screen w-full min-w-0 max-w-full bg-[#060b16] text-slate-50">
         <div id="app-root" className="min-h-screen w-full min-w-0 max-w-full bg-[#060b16]">
-          <CloudDataProvider>{children}</CloudDataProvider>
+          {children}
         </div>
       </body>
     </html>
