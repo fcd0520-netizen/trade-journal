@@ -5,7 +5,6 @@ import { Suspense, useEffect, useState } from "react";
 import RecordRouteSync from "../components/RecordRouteSync";
 import Sidebar from "../components/Sidebar";
 import type { PaperTrade } from "../types/paper-trade";
-import { saveCloudData } from "../lib/supabase";
 
 const STORAGE_KEY = "paper-trades";
 
@@ -46,9 +45,6 @@ export default function PaperTradePage() {
   useEffect(() => {
     if (loaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trades));
-      void saveCloudData(STORAGE_KEY, trades).catch(() => {
-        setMessage("クラウドへ保存できませんでした。通信状態を確認してください。");
-      });
     }
   }, [trades, loaded]);
 
