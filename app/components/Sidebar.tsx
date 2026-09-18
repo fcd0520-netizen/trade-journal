@@ -13,6 +13,7 @@ const menuItems = [
   { id: "journal-list", label: "記録一覧", icon: "list", href: "/#journal-list" },
   { id: "analytics", label: "Analytics", icon: "analytics", href: "/#analytics" },
   { id: "calendar", label: "Calendar", icon: "calendar", href: "/#calendar" },
+  { id: "backup", label: "バックアップ", icon: "list", href: "/backup" },
 ] as const;
 
 type SectionId = (typeof menuItems)[number]["id"];
@@ -122,7 +123,7 @@ export default function Sidebar() {
         </svg>
       </button>
 
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-slate-800 bg-[#080e1b]/95 px-5 py-8 backdrop-blur-xl lg:block">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 overflow-y-auto border-r border-slate-800 bg-[#080e1b]/95 px-5 py-8 backdrop-blur-xl lg:block">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-400">Trade Journal</p>
         <p className="mt-2 text-lg font-semibold text-white">Navigation</p>
         {navigation}
@@ -140,7 +141,7 @@ export default function Sidebar() {
         <aside
           id="mobile-sidebar"
           aria-label="モバイルメニュー"
-          className={`absolute inset-y-0 left-0 w-[min(82vw,20rem)] max-w-full border-r border-slate-800 bg-[#080e1b] px-5 py-6 shadow-2xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+          className={`absolute inset-y-0 left-0 w-[min(82vw,20rem)] max-w-full overflow-y-auto border-r border-slate-800 bg-[#080e1b] px-5 py-6 shadow-2xl transition-transform duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <div className="flex items-center justify-between gap-4">
             <div>
