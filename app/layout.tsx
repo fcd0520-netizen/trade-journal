@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "react-calendar/dist/Calendar.css";
 import "./globals.css";
@@ -16,6 +16,21 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Trade Journal",
   description: "投資判断を記録し、振り返るためのトレードジャーナル",
+  applicationName: "Trade Journal",
+  appleWebApp: {
+    capable: true,
+    title: "Trade Journal",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#060b16",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
