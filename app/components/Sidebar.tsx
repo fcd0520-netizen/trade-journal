@@ -14,6 +14,7 @@ const menuItems = [
   { id: "analytics", label: "Analytics", icon: "analytics", href: "/#analytics" },
   { id: "calendar", label: "Calendar", icon: "calendar", href: "/#calendar" },
   { id: "backup", label: "バックアップ", icon: "list", href: "/backup" },
+  { id: "install", label: "ホーム画面に追加", icon: "plus", href: "/install" },
 ] as const;
 
 type SectionId = (typeof menuItems)[number]["id"];
