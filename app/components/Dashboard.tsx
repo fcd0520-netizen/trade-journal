@@ -5,6 +5,7 @@ import { getRecordHref, type RecordSource } from "../lib/record-links";
 import type { ActiveJournal } from "../types/journal";
 import type { WatchlistItem, WatchlistStatus } from "../types/watchlist";
 import DashboardToday from "./DashboardToday";
+import MarginRiskCard from "./MarginRiskCard";
 
 type DashboardProps = {
   journals: ActiveJournal[];
@@ -327,6 +328,8 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
       </div>
 
       <DashboardToday journals={journals} watchlistItems={todayWatchlistItems} />
+
+      <MarginRiskCard />
 
       <section aria-labelledby="recent-activity-title" className="ios-card rounded-2xl p-5 sm:p-6">
         <div className="flex items-end justify-between gap-4">
