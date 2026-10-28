@@ -1,3 +1,5 @@
+import type { SavedReview } from "../lib/ai-review";
+
 export type TradeCategory = "株式" | "FX";
 export type Currency = "USD" | "JPY";
 export type EntryDirection = "Buy" | "Sell";
@@ -39,6 +41,7 @@ export type Journal = {
   review: string;
   ruleFollowed: boolean;
   tradeDate: string;
+  aiReview?: SavedReview;
 };
 
 export type ActiveJournal = Journal & { category: TradeCategory };

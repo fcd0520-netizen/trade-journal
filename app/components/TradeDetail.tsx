@@ -1,4 +1,6 @@
 import { useState } from "react";
+import AiTradeReview from "./AiTradeReview";
+import type { SavedReview } from "../lib/ai-review";
 import { calculateInvestment, formatCurrency, formatProfitCurrency, parseMoney } from "../lib/currency";
 import type { ActiveJournal, Settlement } from "../types/journal";
 import StockPriceChart from "../watchlist/components/StockPriceChart";
@@ -15,6 +17,7 @@ type TradeDetailProps = {
   onBack: () => void;
   onEdit: (journal: ActiveJournal) => void;
   onSettlement: (journalId: number, settlement: Settlement) => void;
+  onAiReview: (journalId: number, review: SavedReview) => void;
 };
 
 type DetailItemProps = {
@@ -39,7 +42,7 @@ const getToday = () => {
 
 const profitClass = (value: number) => value > 0 ? "text-emerald-300" : value < 0 ? "text-rose-300" : "text-slate-200";
 
-export default function TradeDetail({ journal, onBack, onEdit, onSettlement }: TradeDetailProps) {
+export default function TradeDetail({ journal, onBack, onEdit, onSettlement, onAiReview }: TradeDetailProps) {
   const [showSettlementForm, setShowSettlementForm] = useState(false);
   const [settlementDate, setSettlementDate] = useState(getToday());
   const [quantity, setQuantity] = useState(journal.remainingShares);
@@ -167,6 +170,7 @@ export default function TradeDetail({ journal, onBack, onEdit, onSettlement }: T
             ))}</div>
           )}
         </section>
+        <AiTradeReview journal={journal} onSave={onAiReview} />
       </div>
     </article>
   );
