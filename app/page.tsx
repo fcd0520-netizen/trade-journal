@@ -10,6 +10,7 @@ import RecordRouteSync from "./components/RecordRouteSync";
 import Sidebar from "./components/Sidebar";
 import TradeDetail from "./components/TradeDetail";
 import WatchlistQuickForm from "./components/WatchlistQuickForm";
+import { readSavedReview } from "./lib/ai-review";
 import { calculateInvestment, formatProfitCurrency, formatProfitUsd, formatUsd, normalizeStoredMoney, parseMoney } from "./lib/currency";
 import type { ActiveJournal, Currency, EntryDirection, Journal, JournalStatus, Settlement, TradeCategory } from "./types/journal";
 
@@ -169,6 +170,7 @@ export default function Home() {
           review: journal.review ?? "",
           ruleFollowed: journal.ruleFollowed ?? false,
           tradeDate: journal.tradeDate ?? journal.createdAt ?? getToday(),
+          aiReview: readSavedReview(journal.aiReview),
         }));
 
           setJournals(restored);
@@ -284,7 +286,7 @@ export default function Home() {
     if (editingId !== null) {
       setJournals((currentJournals) =>
         currentJournals.map((journal) =>
-          journal.id === editingId ? journalData : journal
+          journal.id === editingId ? { ...journalData, aiReview: journal.aiReview } : journal
         )
       );
 
@@ -751,6 +753,11 @@ export default function Home() {
                 handleEdit(journal);
               }}
               onSettlement={handleSettlement}
+              onAiReview={(id, aiReview) => {
+                const next = journals.map(journal => journal.id === id ? { ...journal, aiReview } : journal);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+                setJournals(next);
+              }}
             />
           ) : (
           <>

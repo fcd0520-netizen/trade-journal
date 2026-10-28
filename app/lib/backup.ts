@@ -1,3 +1,5 @@
+import { readSavedReview } from "./ai-review";
+
 export const STORAGE_KEYS = ["trade-journals", "trade-journal-watchlist", "paper-trades"] as const;
 export const RECOVERY_KEY = "trade-journal-before-restore";
 export type StorageKey = (typeof STORAGE_KEYS)[number];
@@ -20,6 +22,7 @@ function validRecord(key: StorageKey, v: unknown): v is Record<string, unknown> 
   return strings(v, ["category", "target", "marketEnvironment", "marketTheme", "majorEvent", "shareCount", "remainingShares", "acquisitionPrice", "profit", "reason", "emotion", "result", "review", "tradeDate"])
     && oneOf(v.currency, ["USD", "JPY"]) && oneOf(v.status, ["holding", "partial", "closed"])
     && oneOf(v.decision, ["Buy", "Sell"]) && typeof v.ruleFollowed === "boolean"
+    && (v.aiReview === undefined || readSavedReview(v.aiReview) !== undefined)
     && Array.isArray(v.settlements) && v.settlements.every(s => object(s) && strings(s, ["id", "settlementDate", "reason", "emotion", "review", "createdAt"]) && [s.quantity, s.settlementPrice, s.realizedProfit].every(finite));
 }
 

@@ -502,15 +502,15 @@ export default function Dashboard({ journals, onEdit }: DashboardProps) {
         )}
       </section>
 
-      <section aria-labelledby="ai-review-title" className="ios-card rounded-2xl border-blue-400/10 p-5 sm:p-6">
+      <section aria-labelledby="ai-review-overview-title" className="ios-card rounded-2xl border-blue-400/10 p-5 sm:p-6">
         <div className="flex items-start gap-4">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-400/15 bg-blue-500/10 font-semibold text-blue-300" aria-hidden="true">AI</span>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h3 id="ai-review-title" className="text-lg font-semibold text-white">AI Review</h3>
-              <span className="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] font-semibold text-slate-500">今後実装</span>
+              <h3 id="ai-review-overview-title" className="text-lg font-semibold text-white">AIで振り返る</h3>
             </div>
-            <p className="mt-2 text-sm leading-6 text-slate-400">あなたのトレード傾向を<br className="sm:hidden" />AIが分析します。</p>
+            <p className="mt-2 text-sm leading-6 text-slate-400">記録の詳細から、判断・ルール・次の一歩を振り返れます。</p>
+            <a href="#journal-list" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-blue-300">振り返る取引記録を選ぶ →</a>
           </div>
         </div>
       </section>
